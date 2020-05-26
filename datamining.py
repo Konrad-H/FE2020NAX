@@ -12,7 +12,12 @@ current_dir = os.path.dirname(__file__)
 oneup_dir = os.path.join(current_dir, os.path.pardir)
 
 file_path = os.path.join(oneup_dir, "./gefcom.csv")
-df = pd.read_csv(file_path) 
-print(df.head())
+data = pd.read_csv(file_path) 
+#print(data.head())
+#print(data.tail())
 
+data1 = data[data['zone']=='TOTAL']
+print(data1.head())
+
+# 
 # with  as f:
