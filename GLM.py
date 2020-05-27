@@ -49,8 +49,8 @@ gauss_log_results = gauss_log.fit()
 param_new=gauss_log_results.params
 
 
-y_pred = gauss_log_results.predict(Xnew )
-residuals = y_pred- Y
+y_pred = gauss_log_results.predict(regressors )
+residuals = y_pred- df.demand
 
 
 # %%
@@ -77,10 +77,12 @@ df_temp=pd.DataFrame(residuals)
 df_temp['drybulb'] = df.drybulb
 df_temp['dewpnt'] = df.dewpnt
 df_temp = df_temp.rename(columns={'demand':'residuals'})
-calendar_var = pd.DataFrame(Xnew, index = x_axis)
+N=len(regressors)
+x_axis = range(366,366+N)
+calendar_var = pd.DataFrame(regressors, index = x_axis)
 
 final_df = pd.concat([df_temp, calendar_var],axis=1)
-final_df.head()
+final_df.tail()
 # %%
 final_df.to_csv("train_data.csv")
 
