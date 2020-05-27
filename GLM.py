@@ -41,10 +41,10 @@ regressors = np.transpose(regressors)
 #print(X)
 
 # %%
-Xnew = regressors[:(365*3)]
-Y= df.demand[:(365*3)]
+Xnew = regressors[:(365*4)]
+Y= df.demand[:(365*4)]
 
-gauss_log = sm.GLM(df.demand[:(365*3)], Xnew, family=sm.families.Gaussian(sm.families.links.log))
+gauss_log = sm.GLM(df.demand[:(365*4)], Xnew, family=sm.families.Gaussian(sm.families.links.log))
 gauss_log_results = gauss_log.fit()
 param_new=gauss_log_results.params
 

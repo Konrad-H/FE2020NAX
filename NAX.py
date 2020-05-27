@@ -23,6 +23,9 @@ mpl.rcParams['axes.grid'] = False
 df = pd.read_csv("train_data.csv") 
 df.head() #length 1095
 
+
+## UNIVARIATE MODEL 
+## TO UNDERSTAND THIS 
 # %% functions
 def univariate_data(dataset, start_index, end_index, history_size, target_size):
   data = []
@@ -56,7 +59,7 @@ uni_train_std = uni_data[:TRAIN_SPLIT].std()
 uni_data = np.array(uni_data-uni_train_mean)/uni_train_std
 
 # %%
-univariate_past_history = 20
+univariate_past_history = 2
 univariate_future_target = 0
 
 x_train_uni, y_train_uni = univariate_data(uni_data, 0, TRAIN_SPLIT,
@@ -100,12 +103,141 @@ def show_plot(plot_data, delta, title):
 
 show_plot([x_train_uni[0], y_train_uni[0]], 0, 'Sample Example')
 
-# %% 
+# %% BASELINE SCENARIO
 def baseline(history):
   return np.mean(history)
 
 show_plot([x_train_uni[0], y_train_uni[0], baseline(x_train_uni[0])], 0,
            'Baseline Prediction Example')
+
+# %% RECURRENT NEURAL NETWORK
+BATCH_SIZE = 50
+BUFFER_SIZE = 10
+
+train_univariate = tf.data.Dataset.from_tensor_slices((x_train_uni, y_train_uni))
+train_univariate = train_univariate.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+
+val_univariate = tf.data.Dataset.from_tensor_slices((x_val_uni, y_val_uni))
+val_univariate = val_univariate.batch(BATCH_SIZE).repeat()
+
+# %% COMPILE SIMPLE SIMPLE MODEL
+simple_lstm_model = tf.keras.models.Sequential([
+    tf.keras.layers.LSTM(8, input_shape=x_train_uni.shape[-2:]),
+    tf.keras.layers.Dense(1)
+])
+
+simple_lstm_model.compile(optimizer='adam', loss='mae')
+
+# %%
+
+for x, y in val_univariate.take(1):
+    print(simple_lstm_model.predict(x).shape)
+
+# %% 
+EVALUATION_INTERVAL = 200
+EPOCHS = 10
+
+simple_lstm_model.fit(train_univariate, epochs=EPOCHS,
+                      steps_per_epoch=EVALUATION_INTERVAL,
+                      validation_data=val_univariate, validation_steps=50)
+
+# %% ADD
+for x, y in val_univariate.take(3):
+  plot = show_plot([x[0].numpy(), y[0].numpy(),
+                    simple_lstm_model.predict(x)[0]], 0, 'Simple LSTM model')
+  plot.show()
+
+# %% 
+
+# %% [markdown]
+
+
+# %% 
+
+def multivariate_data(dataset, target, start_index, end_index, history_size,
+                      target_size, step, single_step=False):
+  data = []
+  labels = []
+
+  start_index = start_index + history_size
+  if end_index is None:
+    end_index = len(dataset) - target_size
+
+  for i in range(start_index, end_index):
+    indices = range(i-history_size, i, step)
+    data.append(dataset[indices])
+
+    if single_step:
+      labels.append(target[i+target_size])
+    else:
+      labels.append(target[i:i+target_size])
+
+  return np.array(data), np.array(labels)
+
+# %%
+
+features_considered = ['drybulb','dewpnt']
+
+for i in range(1,9):
+    features_considered += [str(i) ]
+
+features = df[features_considered]
+features.index = df['Unnamed: 0']
+features.head()
+
+# %% standardize dataset
+features.plot(subplots=True)
+
+dataset = features.values
+data_mean = dataset[:TRAIN_SPLIT].mean(axis=0)
+data_std = dataset[:TRAIN_SPLIT].std(axis=0)
+
+dataset = (dataset-data_mean)/data_std
+
+# %%
+
+past_history = 10
+future_target = 1
+STEP = 1
+
+x_train_single, y_train_single = multivariate_data(dataset, dataset[:, 1], 0,
+                                                   TRAIN_SPLIT, past_history,
+                                                   future_target, STEP,
+                                                   single_step=True)
+x_val_single, y_val_single = multivariate_data(dataset, dataset[:, 1],
+                                               TRAIN_SPLIT, None, past_history,
+                                               future_target, STEP,
+                                               single_step=True)
+print ('Single window of past history : {}'.format(x_train_single[0].shape))
+
+# %% TRAIN VAL DATA
+train_data_single = tf.data.Dataset.from_tensor_slices((x_train_single, y_train_single))
+train_data_single = train_data_single.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+
+val_data_single = tf.data.Dataset.from_tensor_slices((x_val_single, y_val_single))
+val_data_single = val_data_single.batch(BATCH_SIZE).repeat()
+
+# %%
+
+single_step_model = tf.keras.models.Sequential()
+single_step_model.add(tf.keras.layers.LSTM(32,
+                                           input_shape=x_train_single.shape[-2:]))
+single_step_model.add(tf.keras.layers.Dense(1))
+
+single_step_model.compile(optimizer=tf.keras.optimizers.RMSprop(), loss='mae')
+
+# %%
+
+for x, y in val_data_single.take(1):
+  print(single_step_model.predict(x).shape)
+
+# %%
+
+single_step_history = single_step_model.fit(train_data_single, epochs=EPOCHS,
+                                            steps_per_epoch=EVALUATION_INTERVAL,
+                                            validation_data=val_data_single,
+                                            validation_steps=50)
+
 
 # %% custom loss function
 def custom_loss(y_true, y_pred):
