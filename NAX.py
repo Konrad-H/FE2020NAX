@@ -24,6 +24,8 @@ df = pd.read_csv("train_data.csv")
 df = df[:4*365]
 df.head() #length 1095
 
+# %% PLOT DATA
+df.plot(subplots=True)
 # %%
 learn_rate = 0.1 #,.01, .003, .001
 hidden_neurons = 6 # 3,4,5 
@@ -33,7 +35,7 @@ reg_param = .001 #.0001, 0
 
 TRAIN_SPLIT = 1095 #Always 3 years
 BATCH_SIZE = 50
-BUFFER_SIZE = 10 #What is this?
+BUFFER_SIZE = 15 #What is this?
 EPOCHS = 50
 EVALUATION_INTERVAL = 200
 
@@ -82,25 +84,23 @@ def plot_train_history(history, title):
 
 
 # %%
-
+labels_considered = ['residuals']
 features_considered = ['drybulb','dewpnt']
 
 for i in range(1,9):
     features_considered += [str(i) ]
 
-features = df[features_considered]
-features.index = df['Unnamed: 0']
-features.head()
+dataset = df[labels_considered+features_considered]
+dataset.index = df['Unnamed: 0']
+dataset.head()
+features = np.array(dataset)[:,1:]
+target = np.array(dataset)[:,0]
 
-# %% standardize dataset
 
-features.plot(subplots=True)
 
-dataset = features.values
-data_mean = dataset[:TRAIN_SPLIT].mean(axis=0)
-data_std = dataset[:TRAIN_SPLIT].std(axis=0)
+# # %% standardize dataset (already standardized)
+# NO NEED TO STANDARDIZE HERE> ALREADY DONE IN DATAMINING
 
-dataset = (dataset-data_mean)/data_std
 
 # %%
 
@@ -108,25 +108,26 @@ past_history = 2
 future_target = 1
 STEP = 1
 
-x_train_single, y_train_single = multivariate_data(dataset, dataset[:, 1], 0,
+x_train, y_train = multivariate_data(features, target, 0,
                                                    TRAIN_SPLIT, past_history,
                                                    future_target, STEP,
                                                    single_step=True)
-x_val_single, y_val_single = multivariate_data(dataset, dataset[:, 1],
+x_val, y_val = multivariate_data(features, target,
                                                TRAIN_SPLIT, None, past_history,
                                                future_target, STEP,
                                                single_step=True)
-print ('Single window of past history : {}'.format(x_train_single[0].shape))
+print ('Single window of past history : {}'.format(x_train[0].shape))
 
 # %% TRAIN VAL DATA
 
-train_data_single = tf.data.Dataset.from_tensor_slices((x_train_single, y_train_single))
+train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
 
-# train_data_single = train_data_single.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
-train_data_single = train_data_single.cache().batch(BATCH_SIZE).repeat()
+#train_data = train_data.cache().batch(BATCH_SIZE).repeat()
+train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
 
-val_data_single = tf.data.Dataset.from_tensor_slices((x_val_single, y_val_single))
-val_data_single = val_data_single.batch(BATCH_SIZE).repeat()
+
+val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+val_data = val_data.batch(BATCH_SIZE).repeat()
 
 
 # %%
@@ -150,7 +151,7 @@ single_step_model = tf.keras.models.Sequential()
 act_reg = tf.keras.regularizers.l1 (reg_param)
 
 single_step_model.add(tf.keras.layers.SimpleRNN(hidden_neurons, activation=act_f ,
-                                           input_shape=x_train_single.shape[-2:],
+                                           input_shape=x_train.shape[-2:],
                                            activity_regularizer= act_reg ))
 single_step_model.add(tf.keras.layers.Dense(2))
 opt = tf.keras.optimizers.Adam(learn_rate)
@@ -158,14 +159,14 @@ single_step_model.compile(optimizer=opt, loss=custom_loss)
 
 # %%
 
-for x, y in val_data_single.take(1):
+for x, y in val_data.take(1):
   print(single_step_model.predict(x).shape)
 
 # %%
 
-single_step_history = single_step_model.fit(train_data_single, epochs=EPOCHS,
+single_step_history = single_step_model.fit(train_data, epochs=EPOCHS,
                                             steps_per_epoch=EVALUATION_INTERVAL,
-                                            validation_data=val_data_single,
+                                            validation_data=val_data,
                                             validation_steps=50)
 
 
