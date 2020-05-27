@@ -6,154 +6,108 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-import sys
-
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 
-from sklearn.linear_model import TweedieRegressor
-from sklearn.linear_model import LinearRegression
 
-import numpy as np
-import pandas as pd 
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import statsmodels.api as sm
-from scipy import stats
+import numpy as np
+import pandas as pd 
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
-# %%
-# DATA MINING
 
-df = pd.read_csv("gefcom.csv") 
-#print(data.head())
-#print(data.tail())
+# %% LOAD DATA
+df = pd.read_csv("train_data.csv") 
+df.head() #length 1095
 
-## select data
-df_tot = df[df['zone']=='TOTAL']
-df_2 = df_tot[(df_tot['year']>=2009) & (df_tot['year']<=2016)] # ricordare di cambiare date 2011 -> 2016
+# %% functions
+def univariate_data(dataset, start_index, end_index, history_size, target_size):
+  data = []
+  labels = []
 
-#print(df_2.head())
-#print(df_2.tail())
+  start_index = start_index + history_size
+  if end_index is None:
+    end_index = len(dataset) - target_size
+
+  for i in range(start_index, end_index):
+    indices = range(i-history_size, i)
+    # Reshape data from (history_size,) to (history_size, 1)
+    data.append(np.reshape(dataset[indices], (history_size, 1)))
+    labels.append(dataset[i+target_size])
+  return np.array(data), np.array(labels)
 
 
-## create a DataFrame
-date = df_2['date'].unique()
-demand = np.zeros(len(date))
-drybulb = np.zeros(len(date))
-dewpnt = np.zeros(len(date))
-year = np.zeros(len(date))
-month = ['']*(len(date))
-day_of_week = ['']*(len(date))
-holiday = np.zeros(len(date),dtype=bool)
-for n in range(len(date)):
-    demand[n] = sum(df_2[df_2['date']==date[n]].demand)
-    drybulb[n] = np.mean(df_2[df_2['date']==date[n]].drybulb)
-    dewpnt[n] = np.mean(df_2[df_2['date']==date[n]].dewpnt)
-    y = (df_2[df_2['date']==date[n]].year)
-    year[n] = int(y.iloc[0])
-    m = (df_2[df_2['date']==date[n]].month)
-    month[n] = m.iloc[0]
-    d = (df_2[df_2['date']==date[n]].day_of_week)
-    day_of_week[n] = d.iloc[0]
-    h = (df_2[df_2['date']==date[n]].holiday)
-    holiday[n] = h.iloc[0]
+# %% PLOT AND STANDARDIZE
+TRAIN_SPLIT = 1095
 
-df_years = pd.DataFrame({'date': date,
-'demand': demand,
-'drybulb': drybulb,
-'dewpnt': dewpnt,
-'year': year,
-'month': month,
-'day_of_week': day_of_week,
-'holiday': holiday})
-#data3 = pd.DataFrame({'date': date,'demand': demand,'drybulb': drybulb,'dewpnt': dewpnt,'year': year,'month': month,'day_of_week': day_of_week,'holiday': holiday})
+tf.random.set_seed(13)
 
+uni_data = df['residuals']
+uni_data.index = df['Unnamed: 0']
+uni_data.head()
+
+uni_data.plot(subplots=True)
+
+uni_train_mean = uni_data[:TRAIN_SPLIT].mean()
+uni_train_std = uni_data[:TRAIN_SPLIT].std()
+uni_data = np.array(uni_data-uni_train_mean)/uni_train_std
 
 # %%
-print(df_years)
+univariate_past_history = 20
+univariate_future_target = 0
 
-
-# %%
-
-df_stand = df_years 
-# [2] correction
-N_df = len(df_stand.demand)
-df_stand.demand = (df_stand.demand-[min(df_stand.demand)]*len(df_stand.demand))/(max(df_stand.demand)-min(df_stand.demand)) + [0.001]*len(df_stand.demand)
-print(df_stand.demand)
-print(np.mean(df_stand.demand))
-
+x_train_uni, y_train_uni = univariate_data(uni_data, 0, TRAIN_SPLIT,
+                                           univariate_past_history,
+                                           univariate_future_target)
+x_val_uni, y_val_uni = univariate_data(uni_data, TRAIN_SPLIT, None,
+                                       univariate_past_history,
+                                       univariate_future_target)
 
 # %%
-# BUILD THE REGRESSORS
+print ('Single window of past history')
+print (x_train_uni[0])
+print ('\n Target temperature to predict')
+print (y_train_uni[0])
 
-first_year = 2009
-train_year = 2011
+# %% Create Time Steps
 
-data = df_stand[(df_stand['year']>=2009) & (df_stand['year']<=train_year)]
+def create_time_steps(length):
+  return list(range(-length, 0))
 
-log_consumption = np.log(data.demand)
-omega = 2*np.pi/365
-D_weekend = pd.get_dummies(data.day_of_week)
-D_holiday = pd.get_dummies(data.holiday)
-time_in_days = range(len(data))
+def show_plot(plot_data, delta, title):
+  labels = ['History', 'True Future', 'Model Prediction']
+  marker = ['.-', 'rx', 'go']
+  time_steps = create_time_steps(plot_data[0].shape[0])
+  if delta:
+    future = delta
+  else:
+    future = 0
 
-# FIRST DAY IS march 1st, lacking 59 calendar days  6 years from 2003 to before 2009 6*365-59 number of days until 2009
-time_since_dataset = (first_year-2004)*365-59
+  plt.title(title)
+  for i, x in enumerate(plot_data):
+    if i:
+      plt.plot(future, plot_data[i], marker[i], markersize=10,
+               label=labels[i])
+    else:
+      plt.plot(time_steps, plot_data[i].flatten(), marker[i], label=labels[i])
+  plt.legend()
+  plt.xlim([time_steps[0], (future+5)*2])
+  plt.xlabel('Time-Step')
+  return plt
 
-t=( np.array(time_in_days)+time_since_dataset )
-# covariates
-X=[t,np.sin(omega*t),np.cos(omega*t),np.sin(2*omega*t),np.cos(2*omega*t),D_weekend.Sat, D_weekend.Sun, D_holiday.iloc[:,1]] # manca hol
-X = np.transpose(X)
-#print(X)
+show_plot([x_train_uni[0], y_train_uni[0]], 0, 'Sample Example')
 
+# %% 
+def baseline(history):
+  return np.mean(history)
 
-# %%
-# BASIC LINEAR REGRESSION
+show_plot([x_train_uni[0], y_train_uni[0], baseline(x_train_uni[0])], 0,
+           'Baseline Prediction Example')
 
-reg = LinearRegression()
-reg.fit(X,log_consumption)
-print('Linear')
-print(reg.intercept_)
-print(reg.coef_)
-reg.score(X,log_consumption)
-
-
-# %%
-Xnew = [np.ones(len(X)),t,np.sin(omega*t),np.cos(omega*t),np.sin(2*omega*t),np.cos(2*omega*t),D_weekend.Sat, D_weekend.Sun, D_holiday.iloc[:,1]]
-Xnew = np.transpose(Xnew)
-
-gauss_log = sm.GLM(data.demand, Xnew, family=sm.families.Gaussian(sm.families.links.log))
-gauss_log_results = gauss_log.fit()
-param_new=gauss_log_results.params
-
-
-# %%
-# BETA DEL PROF
-beta = [0.385, -0.000016, -0.003, -0.028, 0.136, -0.043, -0.146, -0.120, -0.060]
-
-
-# %%
-# PLOT GLM
-plt.figure()
-
-
-data.demand.plot()
-inter = pd.Series(np.exp(np.array([reg.intercept_]*len(X))+np.dot(X,reg.coef_)))
-inter.plot()
-
-internew = pd.Series(np.exp(np.array(np.dot(Xnew,param_new))))
-internew.plot()
-
-plt.show()
-
-
-# %%
-#custom loss function
+# %% custom loss function
 def custom_loss(y_true, y_pred):
     
     # calculate loss, using likehood function for residual Rt
