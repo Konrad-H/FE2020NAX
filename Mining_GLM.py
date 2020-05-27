@@ -1,10 +1,9 @@
 # DATA EXTRACION FROM gefcom
-
-import numpy as np
-import pandas as pd 
 import os
 import sys
-from sklearn import linear_model
+import numpy as np
+import pandas as pd 
+from sklearn.linear_model import TweedieRegressor
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
@@ -100,7 +99,7 @@ def glm (data):
     print(gauss_log_results.summary())
 
     # regressione con glm, peero viene di merda
-    from sklearn.linear_model import TweedieRegressor
+    
     glm = TweedieRegressor(power=0, alpha=0, link='identity')
     glm.fit(X,log_consumption)
     print('GLM no link f.')
