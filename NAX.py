@@ -21,7 +21,7 @@ mpl.rcParams['axes.grid'] = False
 
 # %% LOAD DATA
 df = pd.read_csv("train_data.csv") 
-df = 
+df = df[:4*365]
 df.head() #length 1095
 
 # %%
@@ -30,6 +30,12 @@ hidden_neurons = 6 # 3,4,5
 n_batch = 50 #none
 act_f = "softmax" #'sigmoid'
 reg_param = .001 #.0001, 0
+
+TRAIN_SPLIT = 1095 #Always 3 years
+BATCH_SIZE = 50
+BUFFER_SIZE = 10 #What is this?
+EPOCHS = 50
+EVALUATION_INTERVAL = 200
 
 
 # %% [markdown]
@@ -57,7 +63,9 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 
   return np.array(data), np.array(labels)
 
-  def plot_train_history(history, title):
+# %%
+
+def plot_train_history(history, title):
   loss = history.history['loss']
   val_loss = history.history['val_loss']
 
@@ -72,30 +80,6 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
 
   plt.show()
 
-def create_time_steps(length):
-   return list(range(-length, 0))
-
-def show_plot(plot_data, delta, title):
-  labels = ['History', 'True Future', 'Model Prediction']
-  marker = ['.-', 'rx', 'go']
-  time_steps = create_time_steps(plot_data[0].shape[0])
-  if delta:
-    future = delta
-  else:
-    future = 0
-
-  plt.title(title)
-  for i, x in enumerate(plot_data):
-    if i:
-      plt.plot(future, plot_data[i], marker[i], markersize=10,
-               label=labels[i])
-    else:
-      plt.plot(time_steps, plot_data[i].flatten(), marker[i], label=labels[i])
-  plt.legend()
-  plt.xlim([time_steps[0], (future+5)*2])
-  plt.xlabel('Time-Step')
-  return plt
-
 
 # %%
 
@@ -109,11 +93,6 @@ features.index = df['Unnamed: 0']
 features.head()
 
 # %% standardize dataset
-TRAIN_SPLIT = 1095 #Always 3 years
-BATCH_SIZE = 50
-BUFFER_SIZE = 10 #What is this?
-EPOCHS = 50
-EVALUATION_INTERVAL = 200
 
 features.plot(subplots=True)
 
@@ -159,10 +138,10 @@ def custom_loss(y_true, y_pred):
 
     mean = y_pred[0]
     var = k.square(y_pred[1])
-    log_L = 1/k.log( k.sqrt(2*np.pi*var))* k.square(mean-y_true)/(2*var)
+    log_L = -1/k.log( k.sqrt(2*np.pi*var))* k.square(mean-y_true)/(2*var)
 
     #return -10**3*k.sum(k.log(loss), axis=-2)
-    return -(10**3)*k.mean(-log_L)
+    return -(10**3)*k.mean(log_L)
 
 # %% NAX MODEL
 
@@ -170,7 +149,7 @@ single_step_model = tf.keras.models.Sequential()
 
 act_reg = tf.keras.regularizers.l1 (reg_param)
 
-single_step_model.add(tf.keras.layers.SimpleRNN(6, activation='sigmoid',
+single_step_model.add(tf.keras.layers.SimpleRNN(hidden_neurons, activation=act_f ,
                                            input_shape=x_train_single.shape[-2:],
                                            activity_regularizer= act_reg ))
 single_step_model.add(tf.keras.layers.Dense(2))
