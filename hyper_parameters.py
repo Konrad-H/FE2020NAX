@@ -10,6 +10,7 @@ batch_size_list = [50, 'no batch'] # 'no batch' = grandezza del dataset
 regularization_parameter_list = [0.001, 0.0001, 0]
 
 RMSE = np.zeros((len(number_of_neurons_list), len(activation_function_list), len(initial_learning_rate_list), len(batch_size_list), len(regularization_parameter_list)))
+
 for n1 in range(len(number_of_neurons_list)):
     for n2 in range(len(activation_function_list)):
         for n3 in range(len(initial_learning_rate_list)):
