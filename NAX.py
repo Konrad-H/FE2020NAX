@@ -25,7 +25,7 @@ df = df[:4*365]
 df.head() #length 1095
 
 # %% PLOT DATA
-df.plot(subplots=True)
+# df.plot(subplots=True)
 # %%
 learn_rate = 0.1 #,.01, .003, .001
 hidden_neurons = 6 # 3,4,5 

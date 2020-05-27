@@ -1,19 +1,14 @@
 # DATA EXTRACION FROM gefcom
-
+# %%
 import pandas as pd 
+import numpy as np
 import os
 import sys
 
-<<<<<<< Updated upstream
-# data = pd.read_csv("example.csv") 
-# data.head()
+# %%
+df = pd.read_csv("gefcom.csv") 
+df.head()
 
-current_dir = os.path.dirname(__file__)
-=======
-# %% READ DF 
-df = pd.read_csv('C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/gefcom.csv') 
-#print(data.head())
-#print(data.tail())
 
 # %% Filter Data 
 df_agg_NE = df[df['zone']=='TOTAL'] #aggregated var by states
@@ -52,16 +47,7 @@ ready_df = pd.DataFrame({'date': date,
                     'month': month,
                     'day_of_week': day_of_week,
                     'holiday': holiday})
->>>>>>> Stashed changes
 
-oneup_dir = os.path.join(current_dir, os.path.pardir)
-
-<<<<<<< Updated upstream
-file_path = os.path.join(oneup_dir, "./gefcom.csv")
-data = pd.read_csv(file_path) 
-#print(data.head())
-#print(data.tail())
-=======
 # %% Standardize DF
 
 # standardize f.
@@ -80,13 +66,10 @@ df_std['log_demand'] = log_demand
 df_std['std_demand'] = standardize(log_demand)
 df_std.drybulb = standardize(df_std.drybulb)
 df_std.dewpnt = standardize(df_std.dewpnt)
-print(df_std)
+df_std.head()
  
+# %% WRITE FILE
+df_std.to_csv("gefcom_standard.csv")
 
->>>>>>> Stashed changes
 
-data1 = data[data['zone']=='TOTAL']
-print(data1.head())
-
-# 
-# with  as f:
+# %%
