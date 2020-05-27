@@ -62,4 +62,4 @@ df_std.demand = (df_std.demand-[min(df_std.demand)]*
 
 # %% Write the DF
 
-df_std.to_csv("GEFCON_standard.csv")
+df_std.to_csv("gefcom_standard.csv")

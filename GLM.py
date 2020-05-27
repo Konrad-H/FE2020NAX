@@ -1,79 +1,91 @@
-t2 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-c2=[20.,30.,40.,25.,46.,37.,65.7,23.,45.,67.,23.,34.5,35.2,23.]
-day2 = ['M','T','W','H','F','Sat','Sun','M','T','W','H','F','Sat','Sun']
-holiday2 = ['False','False','False','False','False','False','False','False','True','False','False','False','False','False']
-    
-data = {'ts': t2,
-        'demand': c2,
-        'day_of_week': day2,
-        'holiday': holiday2}
-import pandas as pd
+# GLM 
+#
+# %% IMPORT 
+import numpy as np
+import pandas as pd 
 
-data = pd.DataFrame (data, columns = ['ts','demand', 'day_of_week','holiday'])
+from sklearn.linear_model import TweedieRegressor
+from sklearn.linear_model import LinearRegression
 
-def glm (data):
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from scipy import stats
 
-    import pandas as pd
-    import numpy as np
-    import os
-    from sklearn import linear_model
-    from sklearn.linear_model import LinearRegression
-    import matplotlib.pyplot as plt
 
-    #t = [1,2,3,4,5,6,7,8,9,10,11,12,13,14]
-    #c=[20.,30.,40.,25.,46.,37.,65.7,23.,45.,67.,23.,34.5,35.2,23.]
-    #day = ['M','T','W','H','F','Sat','Sun','M','T','W','H','F','Sat','Sun']
-    #holiday = ['False','False','False','False','False','False','False','False','True','False','False','False','False','False']
-    log_consumption = np.log(data.demand) #
-    omega = 2*np.pi/365
-    D_weekend = pd.get_dummies(data.day_of_week) #
-    D_holiday = pd.get_dummies(data.holiday) #
-    time_in_days = range(len(data))
-    t=np.array(time_in_days)
-    # covariates
-    X=[t,np.sin(omega*t),np.cos(omega*t),np.sin(2*omega*t),np.cos(2*omega*t),D_weekend.Sat, D_weekend.Sun, D_holiday.iloc[:,1]] # manca hol
-    X = np.transpose(X)
+# %% Build the regressors matrix
 
-    #regressione con regressione lineare
-    reg = LinearRegression()
-    reg.fit(X,log_consumption)
-    print(reg.intercept_)
-    print(reg.coef_)
 
-    # regressione con glm, peero viene di merda
-   # from sklearn.linear_model import TweedieRegressor
-   # glm = TweedieRegressor(power=0, alpha=0, link='identity')
-   # glm.fit(X,log_consumption)
-   # print(glm.intercept_)
-   # print(glm.coef_)
+df = pd.read_csv("gefcom_standard.csv") 
 
-    from sklearn.linear_model import TweedieRegressor
-    glm2 = TweedieRegressor(power=0, alpha=0, link='log')
-    glm2.fit(X,data.demand)
-    print(glm2.intercept_)
-    print(glm2.coef_)
+first_year = 2009
+last_year = 2016
 
-    #plot
-    plt.figure()
-    
-    data.demand.plot()
-    inter = pd.Series(np.exp(np.array([reg.intercept_]*len(X))+np.dot(X,reg.coef_)))
-    inter.plot()
-    inter2 = pd.Series(np.exp(np.array([glm2.intercept_]*len(X))+np.dot(X,glm2.coef_)))
-    inter2.plot()
-    #inter1 = pd.Series(np.exp(np.array([glm.intercept_]*len(X))+np.dot(X,glm.coef_)))
-    #inter1.plot()
-    plt.show()
 
-    coeff=[reg.intercept_,reg.coef_]
-    return coeff
-cf=glm(data)
-print()
-print(cf)
-print()
-print(cf[0])
+df = df[(df['year']>=first_year) & (df['year']<=last_year)]
+N_data = len(df)
+
+log_consumption = np.log(df.demand)
+omega = 2*np.pi/365
+D_weekend = pd.get_dummies(df.day_of_week)
+time_in_days = range(N_data)
+
+# FIRST DAY IS march 1st, lacking 59 calendar days  6 years from 2003 to before 2009 6*365-59 number of days until 2009
+time_since_dataset = (first_year-2003)*365-59
+
+t=( np.array(time_in_days)+time_since_dataset )
+# covariates
+regressors =[np.ones(N_data),t,np.sin(omega*t),np.cos(omega*t),np.sin(2*omega*t),np.cos(2*omega*t),D_weekend.Sat, D_weekend.Sun, df.holiday] 
+regressors = np.transpose(regressors)
+
+#print(X)
+
+# %%
+Xnew = regressors[:(365*3)]
+Y= df.demand[:(365*3)]
+
+gauss_log = sm.GLM(df.demand[:(365*3)], Xnew, family=sm.families.Gaussian(sm.families.links.log))
+gauss_log_results = gauss_log.fit()
+param_new=gauss_log_results.params
+
+
+y_pred = gauss_log_results.predict(Xnew )
+residuals = y_pred- Y
 
 
 
 
+# %%
+# BETA DEL PROF
+beta = [0.385, -0.000016, -0.003, -0.028, 0.136, -0.043, -0.146, -0.120, -0.060]
 
+
+# %%
+# PLOT GLM
+plt.figure()
+
+df.demand.plot()
+
+N=len(Xnew)
+x_axis = range(366,366+N)
+
+internew = pd.Series(np.exp(np.array(np.dot(Xnew,param_new))),index=x_axis)
+internew.plot()
+
+plt.show()
+
+# %%
+df_temp=pd.DataFrame(residuals)
+df_temp['drybulb'] = df.drybulb
+df_temp['dewpnt'] = df.dewpnt
+df_temp = df_temp.rename(columns={'demand':'residuals'})
+calendar_var = pd.DataFrame(Xnew, index = x_axis)
+
+final_df = pd.concat([df_temp, calendar_var],axis=1)
+final_df.head()
+# %%
+final_df.to_csv("train_data.csv")
+
+
+
+# %%
