@@ -8,5 +8,8 @@ def custom_loss(y_true, y_pred):
     mean = y_pred[:,0]
     var = k.square(y_pred[:,1])
 
+    k.clip(mean, -1,1)
+    k.clip(var, 1/(2*pi), None)
+
     log_L = -k.log(2*pi*var)/2-k.square(mean-y_true)/(2*var)
     return -(10**3)*k.mean(log_L)
