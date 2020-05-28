@@ -32,4 +32,8 @@ for n1 in range(len(number_of_neurons_list)):
 
 # 
 argmin = np.unravel_index(np.argmin(RMSE,axis=None),RMSE.shape)
-hyper_parameters = [number_of_neurons_list[argmin[0]], activation_function_list[argmin[1]], initial_learning_rate_list[argmin[2]], batch_size_list[argmin[3]], regularization_parameter_list[argmin[4]]]
+hyper_parameters = [number_of_neurons_list[argmin[0]],
+                    activation_function_list[argmin[1]], 
+                    initial_learning_rate_list[argmin[2]], 
+                    batch_size_list[argmin[3]], 
+                    regularization_parameter_list[argmin[4]]]

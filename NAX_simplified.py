@@ -44,14 +44,18 @@ def custom_loss(y_true, y_pred):
 # %% PLOT AND STANDARDIZE
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
+
 BATCH_SIZE = 50
 BUFFER_SIZE = 10
 EVALUATION_INTERVAL = 200
 EPOCHS = 10
-HIDDEN_NEURONS=32
 REG_PARAM = 0.1
 ACT_FUN = 'softmax' #'SIGMOID'
 LEARN_RATE = 0.001
+
+HIDDEN_NEURONS=32
+LOSS_FUNCTION =   'mae' #'mae', 'mse'custom_loss
+OUTPUT_NEURONS= 1 #2
 
 tf.random.set_seed(14)
 
@@ -107,12 +111,12 @@ single_step_model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
                                            activation=ACT_FUN,
                                            activity_regularizer= act_reg ))
                                            
-single_step_model.add(tf.keras.layers.Dense(1))
+single_step_model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
 
 
 opt = tf.keras.optimizers.Adam(LEARN_RATE)
 # opt = tf.keras.optimizers.RMSprop()
-single_step_model.compile(optimizer=opt, loss='mae')
+single_step_model.compile(optimizer=opt, loss=LOSS_FUNCTION)
 
 # %%
 
