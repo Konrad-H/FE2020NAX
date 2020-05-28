@@ -37,7 +37,7 @@ def custom_loss(y_true, y_pred):
     # calculate loss, using likehood function for residual Rt
 
     mean = y_pred[0]
-    var = k.square(y_pred[1])
+    var = y_pred[1]
 
     log_L = -k.log(2*np.pi*var)/2-k.square(mean-y_true)/(2*var)
     return -(10**3)*k.mean(log_L)
@@ -49,8 +49,12 @@ BATCH_SIZE = 50
 BUFFER_SIZE = 10
 EVALUATION_INTERVAL = 200
 EPOCHS = 10
+HIDDEN_NEURONS=32
+REG_PARAM = 0.1
+ACT_FUN = 'softmax' #'SIGMOID'
+LEARN_RATE = 0.001
 
-tf.random.set_seed(13)
+tf.random.set_seed(14)
 
 
 features_considered = ['drybulb','dewpnt']
@@ -97,12 +101,19 @@ val_data_single = val_data_single.batch(BATCH_SIZE).repeat()
 
 # %%
 
+act_reg = tf.keras.regularizers.l1 (REG_PARAM)
 single_step_model = tf.keras.models.Sequential()
-single_step_model.add(tf.keras.layers.LSTM(32,
-                                           input_shape=x_train_single.shape[-2:]))
+single_step_model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
+                                           input_shape=x_train_single.shape[-2:],
+                                           activation=ACT_FUN,
+                                           activity_regularizer= act_reg ))
+                                           
 single_step_model.add(tf.keras.layers.Dense(1))
 
-single_step_model.compile(optimizer=tf.keras.optimizers.RMSprop(), loss='mae')
+
+opt = tf.keras.optimizers.Adam(LEARN_RATE)
+# opt = tf.keras.optimizers.RMSprop()
+single_step_model.compile(optimizer=opt, loss='mae')
 
 # %%
 
