@@ -33,19 +33,19 @@ def rmse(predictions, targets):
 
 
 # %% PLOT AND STANDARDIZE
+START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
-
-BATCH_SIZE = 1093 #None
+BATCH_SIZE = 50 #None
 BUFFER_SIZE = 10
-EVALUATION_INTERVAL = 200
-EPOCHS = 10
-REG_PARAM = 0
-ACT_FUN = 'sigmoid' #'sigmoid' 'softmax'
-LEARN_RATE = 0.001
 
-HIDDEN_NEURONS=32
-LOSS_FUNCTION =   custom_loss #'mae', 'mse'
+EVALUATION_INTERVAL = 1093
+EPOCHS = 80
+REG_PARAM = 0.0001
+ACT_FUN = 'softmax' #'sigmoid' 'softmax'
+LEARN_RATE = 0.003
+HIDDEN_NEURONS=3
+LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 
 tf.random.set_seed(14)
@@ -65,8 +65,8 @@ labels=np.array(df['residuals'])
 features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
 
 dataset = features.values
-data_mean = dataset[:TRAIN_SPLIT].mean(axis=0)
-data_std = dataset[:TRAIN_SPLIT].std(axis=0)
+data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
+data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
 
 dataset = (dataset-data_mean)/data_std
 
@@ -76,7 +76,7 @@ past_history = 2
 future_target = 0
 STEP = 1
 
-x_train, y_train = multivariate_data(dataset, labels, 0,
+x_train, y_train = multivariate_data(dataset, labels, START_SPLIT,
                                                    TRAIN_SPLIT, past_history,
                                                    future_target, STEP,
                                                    single_step=True)
@@ -121,7 +121,7 @@ history = model.fit(train_data, epochs=EPOCHS,
                                             steps_per_epoch=EVALUATION_INTERVAL,
                                             validation_data=val_data,
                                             validation_steps=50)
-
+plot_train_history(history,"Loss of model")
 # %%
 y_pred =model.predict(x_val)
 N_val = len(y_pred)
