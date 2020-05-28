@@ -24,8 +24,27 @@ df = pd.read_csv("train_data.csv")
 df = df[:4*365]
 df.head() #length 1095
 
+def standardize(vector):
+    M = max(vector)
+    m = min(vector)
+    std_vec = (vector - [m]*len(vector))/(M - m)
+    return std_vec
+ 
+df.residuals = standardize(df.residuals)
+df['1'] = standardize ( df['1'])
+df.drybulb = standardize(df.drybulb)
+df.dewpnt = standardize(df.dewpnt)
+df['2'] = standardize ( df['2'])
+df['3'] = standardize ( df['3'])
+df['4'] = standardize ( df['4'])
+df['5'] = standardize ( df['5'])
+df['6'] = standardize ( df['6'])
+df['7'] = standardize ( df['7'])
+df['8'] = standardize ( df['8'])
+
 # %% PLOT DATA
-# df.plot(subplots=True)
+df.plot(subplots=True)
+
 # %%
 learn_rate = 0.1 #,.01, .003, .001
 hidden_neurons = 6 # 3,4,5 
@@ -57,7 +76,7 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
   for i in range(start_index, end_index):
     indices = range(i-history_size, i, step)
     data.append(dataset[indices])
-
+    
     if single_step:
       labels.append(target[i+target_size])
     else:
@@ -122,8 +141,8 @@ print ('Single window of past history : {}'.format(x_train[0].shape))
 
 train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
 
-#train_data = train_data.cache().batch(BATCH_SIZE).repeat()
-train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+train_data = train_data.cache().batch(BATCH_SIZE).repeat()
+#train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
 
 
 val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val))
@@ -139,7 +158,7 @@ def custom_loss(y_true, y_pred):
 
     mean = y_pred[0]
     var = k.square(y_pred[1])
-    log_L = -1/k.log( k.sqrt(2*np.pi*var))* k.square(mean-y_true)/(2*var)
+    log_L = -1/2 * k.log(2*np.pi*var) - k.square(mean-y_true)/(2*var)
 
     #return -10**3*k.sum(k.log(loss), axis=-2)
     return -(10**3)*k.mean(log_L)
@@ -174,5 +193,6 @@ single_step_history = single_step_model.fit(train_data, epochs=EPOCHS,
 
 plot_train_history(single_step_history, 'Single Step Training and validation loss')
 
+print(single_step_model.predict(x_val))
 
 # %%
