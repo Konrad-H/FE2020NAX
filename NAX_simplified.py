@@ -39,18 +39,18 @@ VAL_SPLIT = 1095+365
 BATCH_SIZE = 50 #None
 BUFFER_SIZE = 10
 
-EVALUATION_INTERVAL = 1093
-EPOCHS = 20
-REG_PARAM = 0.0001
+EVALUATION_INTERVAL =200
+EPOCHS = 200
+REG_PARAM = 0.0003
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003
+LEARN_RATE = 0.001
 HIDDEN_NEURONS=3
 LOSS_FUNCTION =  'mse' #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 
-
+#opt=tf.keras.optimizers.RMSprop()
 opt = tf.keras.optimizers.Adam(LEARN_RATE)
-opt=tf.keras.optimizers.RMSprop()
+
 tf.random.set_seed(14)
 
 
