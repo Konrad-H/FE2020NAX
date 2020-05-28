@@ -8,184 +8,142 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import tensorflow as tf
 
-
-import keras.backend as k
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
+
+from tf_ts_functions import  plot_train_history, multivariate_data
+from custom_loss import custom_loss
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
 
 # %% LOAD DATA
-df = pd.read_csv("train_data.csv") 
-df = df[:4*365]
+df = pd.read_csv("train_data.csv",index_col=0) 
 df.head() #length 1095
-
-# %% PLOT DATA
-# df.plot(subplots=True)
-# %%
-learn_rate = 0.1 #,.01, .003, .001
-hidden_neurons = 6 # 3,4,5 
-n_batch = 50 #none
-act_f = "softmax" #'sigmoid'
-reg_param = .001 #.0001, 0
-
-TRAIN_SPLIT = 1095 #Always 3 years
-BATCH_SIZE = 50
-BUFFER_SIZE = 15 #What is this?
-EPOCHS = 10
-EVALUATION_INTERVAL = 200
+## UNIVARIATE MODEL 
+## TO UNDERSTAND THIS 
+# %% functions
 
 
-# %% [markdown]
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
 
 
-# %% CREATE GOOD DATA & OTHER FUNCTIONS
+# %% PLOT AND STANDARDIZE
+START_SPLIT = 0
+TRAIN_SPLIT = 1095
+VAL_SPLIT = 1095+365
+BATCH_SIZE = 50 #None
+BUFFER_SIZE = 10
 
-def multivariate_data(dataset, target, start_index, end_index, history_size,
-                      target_size, step, single_step=False):
-  data = []
-  labels = []
-
-  start_index = start_index + history_size
-  if end_index is None:
-    end_index = len(dataset) - target_size
-
-  for i in range(start_index, end_index):
-    indices = range(i-history_size, i, step)
-    data.append(dataset[indices])
-
-    if single_step:
-      labels.append(target[i+target_size])
-    else:
-      labels.append(target[i:i+target_size])
-
-  return np.array(data), np.array(labels)
-
-# %%
-
-def plot_train_history(history, title):
-  loss = history.history['loss']
-  val_loss = history.history['val_loss']
-
-  epochs = range(len(loss))
-
-  plt.figure()
-
-  plt.plot(epochs, loss, 'b', label='Training loss')
-  plt.plot(epochs, val_loss, 'r', label='Validation loss')
-  plt.title(title)
-  plt.legend()
-
-  plt.show()
+EVALUATION_INTERVAL = 1093
+EPOCHS = 20
+REG_PARAM = 0.0001
+ACT_FUN = 'softmax' #'sigmoid' 'softmax'
+LEARN_RATE = 0.003
+HIDDEN_NEURONS=3
+LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
+OUTPUT_NEURONS= 2 #2
 
 
-# %%
-labels_considered = ['residuals']
+opt = tf.keras.optimizers.Adam(LEARN_RATE)
+opt=tf.keras.optimizers.RMSprop()
+tf.random.set_seed(14)
+
+
 features_considered = ['drybulb','dewpnt']
 
 for i in range(1,9):
     features_considered += [str(i) ]
 
-dataset = df[labels_considered+features_considered]
-dataset.index = df['Unnamed: 0']
-dataset.head() 
+features = df[features_considered]
+features.head()
 
+labels=np.array(df['residuals'])
+# %% standardize dataset
+#features.plot(subplots=True)
+features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
 
-# %% standardize dataset (already standardized)
- 
-dataset['1'] = dataset['1']/np.max(dataset['1'])
+dataset = features.values
+data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
+data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
 
-features = np.array(dataset)[:,1:]
-target = np.array(dataset)[:,0]
-
-
-
-
-
+dataset = (dataset-data_mean)/data_std
 
 # %%
 
 past_history = 2
-future_target = 1
+future_target = 0
 STEP = 1
 
-x_train, y_train = multivariate_data(features, target, 0,
+x_train, y_train = multivariate_data(dataset, labels, START_SPLIT,
                                                    TRAIN_SPLIT, past_history,
                                                    future_target, STEP,
                                                    single_step=True)
-x_val, y_val = multivariate_data(features, target,
-                                               TRAIN_SPLIT, None, past_history,
+x_val, y_val = multivariate_data(dataset, labels,
+                                               TRAIN_SPLIT, VAL_SPLIT, past_history,
                                                future_target, STEP,
                                                single_step=True)
 print ('Single window of past history : {}'.format(x_train[0].shape))
 
 # %% TRAIN VAL DATA
-
 train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-
-#train_data = train_data.cache().batch(BATCH_SIZE).repeat()
 train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
-
 
 val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_data = val_data.batch(BATCH_SIZE).repeat()
 
-
 # %%
+model = tf.keras.models.Sequential()
 
-# %% custom loss function
-def custom_loss(y_true, y_pred):
-    
-    # calculate loss, using likehood function for residual Rt
+act_reg = tf.keras.regularizers.l1 (REG_PARAM)
 
-    mean = y_pred[0]
-    var = k.square(y_pred[1])
-    #log_L = -k.log( k.sqrt(2*np.pi*var))* k.square(mean-y_true)/(2*var)
-    #L = k.exp(k.square(mean-y_true)/(2*var))/ k.sqrt(2*np.pi*var)
-    #return -(10**3)*k.mean(k.log(L))
-
-    log_L = -k.log(2*np.pi*var)/2-k.square(mean-y_true)/(2*var)
-    return -(10**3)*k.mean(log_L)
-
-# %% NAX MODEL
-
-NAX_model = tf.keras.models.Sequential()
-
-act_reg = tf.keras.regularizers.l1 (reg_param)
-
-NAX_model.add(tf.keras.layers.SimpleRNN(hidden_neurons, activation=act_f ,
+model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
                                            input_shape=x_train.shape[-2:],
+                                           activation=ACT_FUN,
                                            activity_regularizer= act_reg ))
-NAX_model.add(tf.keras.layers.Dense(2))
-opt = tf.keras.optimizers.Adam(learn_rate)
-NAX_model.compile(optimizer=opt, loss=custom_loss)
+                                           
+model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
+
+
+
+# opt = tf.keras.optimizers.RMSprop()
+model.compile(optimizer=opt, loss=LOSS_FUNCTION)
 
 # %%
 
 for x, y in val_data.take(1):
-  print(NAX_model.predict(x).shape)
+  print(model.predict(x).shape)
 
 # %%
 
-NAX_history = NAX_model.fit(train_data, epochs=EPOCHS,
+history = model.fit(train_data, epochs=EPOCHS,
                                             steps_per_epoch=EVALUATION_INTERVAL,
                                             validation_data=val_data,
                                             validation_steps=50)
-
-
-# %% plot train history
-
-plot_train_history(NAX_history, 'Single Step Training and validation loss')
-
-
+plot_train_history(history,"Loss of model")
 # %%
+y_pred =model.predict(x_val)
+N_val = len(y_pred)
+the_length = len(df['std_demand'])
+START = TRAIN_SPLIT+past_history+future_target
 
-NAX_model.predict(x_val)
+demand_true = pd.Series(df['std_demand'][START:START+N_val])
+demand_NAX = (demand_true- y_val)+y_pred[:,0]
+demand_GLM = (demand_true- y_val)
+# %%
+plt.figure()
+demand_true.plot()
+demand_NAX.plot()
+demand_GLM.plot()
+plt.show()
 
-
+RMSE_GLM=rmse(demand_GLM, demand_true)
+RMSE_NAX=rmse(demand_NAX, demand_true)
+print('RMSE_GLM',RMSE_GLM)
+print('RMSE_NAX',RMSE_NAX)
 
 # %%
