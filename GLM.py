@@ -92,12 +92,12 @@ y_pred = linreg.predict(X)
 residuals = y- y_pred
 
 df_temp=pd.DataFrame(residuals)
-df_temp['drybulb'] = df.drybulb
-df_temp['dewpnt'] = df.dewpnt
+df_temp['drybulb'] = df_reg.drybulb
+df_temp['dewpnt'] = df_reg.dewpnt
 df_temp = df_temp.rename(columns={'std_demand':'residuals'})
 
-df_temp['std_demand']=df.std_demand
-df_temp['log_demand']=df.log_demand
+df_temp['std_demand']=df_reg.std_demand
+df_temp['log_demand']=df_reg.log_demand
 N=len(regressors)
 x_axis = range(365,365+N)
 calendar_var = pd.DataFrame(regressors, index = x_axis)
@@ -111,5 +111,20 @@ final_df.to_csv("train_data.csv")
 
 
 
+
+# %%
+#%%
+
+demand_std = pd.Series(y)
+demand_GLM = pd.Series(y_pred+y*0)
+demand_GLM2 = pd.Series(y-residuals)
+# %%
+plt.figure()
+
+
+demand_std[1000:1300].plot()
+demand_GLM[1000:1300].plot()
+demand_GLM2[1000:1300].plot()
+plt.show()
 
 # %%

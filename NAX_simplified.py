@@ -15,41 +15,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
 
+from tf_ts_functions import univariate_data, show_plot, plot_train_history, multivariate_data
+
+
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
 
 # %% LOAD DATA
-df = pd.read_csv("train_data.csv") 
+df = pd.read_csv("train_data.csv",index_col=0) 
+
+first_year = 0
+last_year = 365*4
+df=df[first_year:last_year]
 df.head() #length 1095
-
-
 ## UNIVARIATE MODEL 
 ## TO UNDERSTAND THIS 
 # %% functions
-def univariate_data(dataset, start_index, end_index, history_size, target_size):
-  data = []
-  labels = []
-
-  start_index = start_index + history_size
-  if end_index is None:
-    end_index = len(dataset) - target_size
-
-  for i in range(start_index, end_index):
-    indices = range(i-history_size, i)
-    # Reshape data from (history_size,) to (history_size, 1)
-    data.append(np.reshape(dataset[indices], (history_size, 1)))
-    labels.append(dataset[i+target_size])
-  return np.array(data), np.array(labels)
 
 
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
 # %% PLOT AND STANDARDIZE
 TRAIN_SPLIT = 1095
 
 tf.random.set_seed(13)
 
 uni_data = df['residuals']
-uni_data.index = df['Unnamed: 0']
+
 uni_data.head()
 
 uni_data.plot(subplots=True)
@@ -77,29 +70,6 @@ print (y_train_uni[0])
 
 # %% Create Time Steps
 
-def create_time_steps(length):
-  return list(range(-length, 0))
-
-def show_plot(plot_data, delta, title):
-  labels = ['History', 'True Future', 'Model Prediction']
-  marker = ['.-', 'rx', 'go']
-  time_steps = create_time_steps(plot_data[0].shape[0])
-  if delta:
-    future = delta
-  else:
-    future = 0
-
-  plt.title(title)
-  for i, x in enumerate(plot_data):
-    if i:
-      plt.plot(future, plot_data[i], marker[i], markersize=10,
-               label=labels[i])
-    else:
-      plt.plot(time_steps, plot_data[i].flatten(), marker[i], label=labels[i])
-  plt.legend()
-  plt.xlim([time_steps[0], (future+5)*2])
-  plt.xlabel('Time-Step')
-  return plt
 
 show_plot([x_train_uni[0], y_train_uni[0]], 0, 'Sample Example')
 
@@ -149,44 +119,20 @@ for x, y in val_univariate.take(3):
 
 # %% 
 
-# %% [markdown]
-
-
-# %% 
-
-def multivariate_data(dataset, target, start_index, end_index, history_size,
-                      target_size, step, single_step=False):
-  data = []
-  labels = []
-
-  start_index = start_index + history_size
-  if end_index is None:
-    end_index = len(dataset) - target_size
-
-  for i in range(start_index, end_index):
-    indices = range(i-history_size, i, step)
-    data.append(dataset[indices])
-
-    if single_step:
-      labels.append(target[i+target_size])
-    else:
-      labels.append(target[i:i+target_size])
-
-  return np.array(data), np.array(labels)
-
 # %%
 
-features_considered = ['std_demand','drybulb','dewpnt']
+features_considered = ['drybulb','dewpnt']
 
 for i in range(1,9):
     features_considered += [str(i) ]
 
 features = df[features_considered]
-features.index = df['Unnamed: 0']
 features.head()
 
+labels=np.array(df['residuals'])
 # %% standardize dataset
-features.plot(subplots=True)
+#features.plot(subplots=True)
+features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
 
 dataset = features.values
 data_mean = dataset[:TRAIN_SPLIT].mean(axis=0)
@@ -200,11 +146,11 @@ past_history = 2
 future_target = 0
 STEP = 1
 
-x_train_single, y_train_single = multivariate_data(dataset[:,1:], dataset[:, 0], 0,
+x_train_single, y_train_single = multivariate_data(dataset, labels, 0,
                                                    TRAIN_SPLIT, past_history,
                                                    future_target, STEP,
                                                    single_step=True)
-x_val_single, y_val_single = multivariate_data(dataset[:,1:], dataset[:, 0],
+x_val_single, y_val_single = multivariate_data(dataset, labels,
                                                TRAIN_SPLIT, None, past_history,
                                                future_target, STEP,
                                                single_step=True)
@@ -239,23 +185,33 @@ single_step_history = single_step_model.fit(train_data_single, epochs=EPOCHS,
                                             validation_steps=50)
 
 # %% 
-y_pred = single_step_model.predict(x_val_single)
+
+N_val = len(y_pred)
+y_pred =single_step_model.predict(x_val_single)
+results = 
+
+
+demand_true = pd.Series(df['std_demand'][-N_val):])
+demand_pred = (demand_true- y_val_single)+y_pred
 
 # %%
-def plot_train_history(history, title):
-  loss = history.history['loss']
-  val_loss = history.history['val_loss']
+demand_plt = pd.Series(df_reg.demand,index=x_axis)
+demand_plt.plot()
 
-  epochs = range(len(loss))
+M = max(df.log_demand)
+m = min(df.log_demand) 
 
-  plt.figure()
+demand_pred = y_pred*(M-m) + m
+internew = pd.Series(np.exp(demand_pred),index=x_axis)
+internew.plot()
 
-  plt.plot(epochs, loss, 'b', label='Training loss')
-  plt.plot(epochs, val_loss, 'r', label='Validation loss')
-  plt.title(title)
-  plt.legend()
+plt.show()
 
-  plt.show()
+# %%
+
+
+# %%
+
 
 plot_train_history(single_step_history, 'Single Step Training and validation loss')
 
