@@ -36,7 +36,7 @@ reg_param = .001 #.0001, 0
 TRAIN_SPLIT = 1095 #Always 3 years
 BATCH_SIZE = 50
 BUFFER_SIZE = 15 #What is this?
-EPOCHS = 50
+EPOCHS = 10
 EVALUATION_INTERVAL = 200
 
 
@@ -92,14 +92,19 @@ for i in range(1,9):
 
 dataset = df[labels_considered+features_considered]
 dataset.index = df['Unnamed: 0']
-dataset.head()
+dataset.head() 
+
+
+# %% standardize dataset (already standardized)
+ 
+dataset['1'] = dataset['1']/np.max(dataset['1'])
+
 features = np.array(dataset)[:,1:]
 target = np.array(dataset)[:,0]
 
 
 
-# # %% standardize dataset (already standardized)
-# NO NEED TO STANDARDIZE HERE> ALREADY DONE IN DATAMINING
+
 
 
 # %%
@@ -139,32 +144,34 @@ def custom_loss(y_true, y_pred):
 
     mean = y_pred[0]
     var = k.square(y_pred[1])
-    log_L = -1/k.log( k.sqrt(2*np.pi*var))* k.square(mean-y_true)/(2*var)
+    #log_L = -k.log( k.sqrt(2*np.pi*var))* k.square(mean-y_true)/(2*var)
+    #L = k.exp(k.square(mean-y_true)/(2*var))/ k.sqrt(2*np.pi*var)
+    #return -(10**3)*k.mean(k.log(L))
 
-    #return -10**3*k.sum(k.log(loss), axis=-2)
+    log_L = -k.log(2*np.pi*var)/2-k.square(mean-y_true)/(2*var)
     return -(10**3)*k.mean(log_L)
 
 # %% NAX MODEL
 
-single_step_model = tf.keras.models.Sequential()
+NAX_model = tf.keras.models.Sequential()
 
 act_reg = tf.keras.regularizers.l1 (reg_param)
 
-single_step_model.add(tf.keras.layers.SimpleRNN(hidden_neurons, activation=act_f ,
+NAX_model.add(tf.keras.layers.SimpleRNN(hidden_neurons, activation=act_f ,
                                            input_shape=x_train.shape[-2:],
                                            activity_regularizer= act_reg ))
-single_step_model.add(tf.keras.layers.Dense(2))
+NAX_model.add(tf.keras.layers.Dense(2))
 opt = tf.keras.optimizers.Adam(learn_rate)
-single_step_model.compile(optimizer=opt, loss=custom_loss)
+NAX_model.compile(optimizer=opt, loss=custom_loss)
 
 # %%
 
 for x, y in val_data.take(1):
-  print(single_step_model.predict(x).shape)
+  print(NAX_model.predict(x).shape)
 
 # %%
 
-single_step_history = single_step_model.fit(train_data, epochs=EPOCHS,
+NAX_history = NAX_model.fit(train_data, epochs=EPOCHS,
                                             steps_per_epoch=EVALUATION_INTERVAL,
                                             validation_data=val_data,
                                             validation_steps=50)
@@ -172,7 +179,13 @@ single_step_history = single_step_model.fit(train_data, epochs=EPOCHS,
 
 # %% plot train history
 
-plot_train_history(single_step_history, 'Single Step Training and validation loss')
+plot_train_history(NAX_history, 'Single Step Training and validation loss')
+
+
+# %%
+
+NAX_model.predict(x_val)
+
 
 
 # %%
