@@ -3,6 +3,11 @@ import pandas as pd
 import os
 import sys
 
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
+
+# y_true = df['demand']
+
 number_of_neurons_list = [3, 4, 5, 6]
 activation_function_list = ['softmax', 'sigmoid']
 initial_learning_rate_list = [0.1, 0.01, 0.003, 0.001]
@@ -21,7 +26,9 @@ for n1 in range(len(number_of_neurons_list)):
                     initial_learning_rate = initial_learning_rate_list[n3]
                     batch_size = batch_size_list[n4]
                     regularization_parameter = regularization_parameter_list[n5]
-                    #RMSE[n1,n2,n3,n4,n5] = ...
+                    # [mu, sigma] 
+                    # 
+                    #RMSE[n1,n2,n3,n4,n5] = rmse(predictions, targets)
 
 # 
 argmin = np.unravel_index(np.argmin(RMSE,axis=None),RMSE.shape)
