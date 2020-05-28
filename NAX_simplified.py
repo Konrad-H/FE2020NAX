@@ -8,14 +8,13 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import tensorflow as tf
 
-
-
+import tensorflow.keras.backend as k
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
 
-from tf_ts_functions import univariate_data, show_plot, plot_train_history, multivariate_data
+from tf_ts_functions import  plot_train_history, multivariate_data
 
 
 mpl.rcParams['figure.figsize'] = (8, 6)
