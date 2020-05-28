@@ -180,48 +180,29 @@ for x, y in val_data_single.take(1):
 # %%
 
 single_step_history = single_step_model.fit(train_data_single, epochs=EPOCHS,
-                                            steps_per_epoch=EVALUATION_INTERVAL,
+                                            steps_per_epoch=EVALUATION_INTERVAL),
                                             validation_data=val_data_single,
                                             validation_steps=50)
 
 # %% 
 
-N_val = len(y_pred)
+
 y_pred =single_step_model.predict(x_val_single)
-results = 
+N_val = len(y_pred)
 
 
-demand_true = pd.Series(df['std_demand'][-N_val):])
-demand_pred = (demand_true- y_val_single)+y_pred
+demand_true = pd.Series(df['std_demand'][-N_val:])
+demand_NAX = (demand_true- y_val_single)+y_pred[:,0]
+demand_GLM = (demand_true- y_val_single)
+# %%
+demand_true.plot()
+demand_NAX.plot()
+demand_GLM.plot()
+RMSE_GLM=rmse(demand_GLM, demand_true)
+RMSE_NAX=rmse(demand_NAX, demand_true)
+print('RMSE_GLM',RMSE_GLM)
+print('RMSE_NAX',RMSE_NAX)
 
 # %%
-demand_plt = pd.Series(df_reg.demand,index=x_axis)
-demand_plt.plot()
-
-M = max(df.log_demand)
-m = min(df.log_demand) 
-
-demand_pred = y_pred*(M-m) + m
-internew = pd.Series(np.exp(demand_pred),index=x_axis)
-internew.plot()
-
-plt.show()
-
-# %%
-
-
-# %%
-
-
-plot_train_history(single_step_history, 'Single Step Training and validation loss')
-
-for x, y in val_data_single.take(3):
-  plot = show_plot([x[0][:, 1].numpy(), y[0].numpy(),
-                    single_step_model.predict(x)[0]], 12,
-                   'Single Step Prediction')
-  plot.show()
-
-# %%
-
 
 # %%
