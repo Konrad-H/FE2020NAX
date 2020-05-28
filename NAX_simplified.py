@@ -8,14 +8,13 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import tensorflow as tf
 
-import tensorflow.keras.backend as k
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
 
 from tf_ts_functions import  plot_train_history, multivariate_data
-
+from custom_loss import custom_loss
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
@@ -31,31 +30,23 @@ df.head() #length 1095
 
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
-def custom_loss(y_true, y_pred):
-    
-    # calculate loss, using likehood function for residual Rt
 
-    mean = y_pred[0]
-    var = y_pred[1]
-
-    log_L = -k.log(2*np.pi*var)/2-k.square(mean-y_true)/(2*var)
-    return -(10**3)*k.mean(log_L)
 
 # %% PLOT AND STANDARDIZE
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
 
-BATCH_SIZE = 50
+BATCH_SIZE = 1093 #None
 BUFFER_SIZE = 10
 EVALUATION_INTERVAL = 200
 EPOCHS = 10
-REG_PARAM = 0.1
-ACT_FUN = 'softmax' #'SIGMOID'
+REG_PARAM = 0
+ACT_FUN = 'sigmoid' #'sigmoid' 'softmax'
 LEARN_RATE = 0.001
 
 HIDDEN_NEURONS=32
-LOSS_FUNCTION =   'mae' #'mae', 'mse'custom_loss
-OUTPUT_NEURONS= 1 #2
+LOSS_FUNCTION =   custom_loss #'mae', 'mse'
+OUTPUT_NEURONS= 2 #2
 
 tf.random.set_seed(14)
 
@@ -85,62 +76,61 @@ past_history = 2
 future_target = 0
 STEP = 1
 
-x_train_single, y_train_single = multivariate_data(dataset, labels, 0,
+x_train, y_train = multivariate_data(dataset, labels, 0,
                                                    TRAIN_SPLIT, past_history,
                                                    future_target, STEP,
                                                    single_step=True)
-x_val_single, y_val_single = multivariate_data(dataset, labels,
+x_val, y_val = multivariate_data(dataset, labels,
                                                TRAIN_SPLIT, VAL_SPLIT, past_history,
                                                future_target, STEP,
                                                single_step=True)
-print ('Single window of past history : {}'.format(x_train_single[0].shape))
+print ('Single window of past history : {}'.format(x_train[0].shape))
 
 # %% TRAIN VAL DATA
-train_data_single = tf.data.Dataset.from_tensor_slices((x_train_single, y_train_single))
-train_data_single = train_data_single.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
 
-val_data_single = tf.data.Dataset.from_tensor_slices((x_val_single, y_val_single))
-val_data_single = val_data_single.batch(BATCH_SIZE).repeat()
+val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+val_data = val_data.batch(BATCH_SIZE).repeat()
 
 # %%
+model = tf.keras.models.Sequential()
 
 act_reg = tf.keras.regularizers.l1 (REG_PARAM)
-single_step_model = tf.keras.models.Sequential()
-single_step_model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
-                                           input_shape=x_train_single.shape[-2:],
+
+model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
+                                           input_shape=x_train.shape[-2:],
                                            activation=ACT_FUN,
                                            activity_regularizer= act_reg ))
                                            
-single_step_model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
+model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
 
 
 opt = tf.keras.optimizers.Adam(LEARN_RATE)
 # opt = tf.keras.optimizers.RMSprop()
-single_step_model.compile(optimizer=opt, loss=LOSS_FUNCTION)
+model.compile(optimizer=opt, loss=LOSS_FUNCTION)
 
 # %%
 
-for x, y in val_data_single.take(1):
-  print(single_step_model.predict(x).shape)
+for x, y in val_data.take(1):
+  print(model.predict(x).shape)
 
 # %%
 
-single_step_history = single_step_model.fit(train_data_single, epochs=EPOCHS,
+history = model.fit(train_data, epochs=EPOCHS,
                                             steps_per_epoch=EVALUATION_INTERVAL,
-                                            validation_data=val_data_single,
+                                            validation_data=val_data,
                                             validation_steps=50)
 
-# %% 
-
-
-y_pred =single_step_model.predict(x_val_single)
+# %%
+y_pred =model.predict(x_val)
 N_val = len(y_pred)
 the_length = len(df['std_demand'])
-START = TRAIN_SPLIT+2 
+START = TRAIN_SPLIT+past_history+future_target
 
 demand_true = pd.Series(df['std_demand'][START:START+N_val])
-demand_NAX = (demand_true- y_val_single)+y_pred[:,0]
-demand_GLM = (demand_true- y_val_single)
+demand_NAX = (demand_true- y_val)+y_pred[:,0]
+demand_GLM = (demand_true- y_val)
 # %%
 plt.figure()
 demand_true.plot()
