@@ -40,15 +40,15 @@ BATCH_SIZE = 50 #None
 BUFFER_SIZE = 10
 
 EVALUATION_INTERVAL =200
-EPOCHS = 20 #200
+EPOCHS = 100 #200
 REG_PARAM = 0.0003
-ACT_FUN = 'softmax' #'sigmoid' 'softmax'
+ACT_FUN = 'sigmoid' #'sigmoid' 'softmax'
 LEARN_RATE = 0.001
-HIDDEN_NEURONS=6 #3
-LOSS_FUNCTION =  'mse' #custom_loss #'mae', 'mse'
+HIDDEN_NEURONS=3 #3
+LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 
-#opt=tf.keras.optimizers.RMSprop()
+# opt=tf.keras.optimizers.RMSprop()
 opt = tf.keras.optimizers.Adam(LEARN_RATE)
 
 tf.random.set_seed(14)
@@ -104,7 +104,11 @@ act_reg = tf.keras.regularizers.l1 (REG_PARAM)
 model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
                                            input_shape=x_train.shape[-2:],
                                            activation=ACT_FUN,
-                                           activity_regularizer= act_reg ))
+                                           activity_regularizer= act_reg ,
+                                          #  kernel_initializer=tf.keras.initializers.RandomNormal(stddev=1),
+                                          # bias_initializer=tf.keras.initializers.Ones()
+
+                                           ))
                                            
 model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
 

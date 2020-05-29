@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 def univariate_data(dataset, start_index, end_index, history_size, target_size):
