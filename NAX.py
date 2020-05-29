@@ -39,12 +39,12 @@ VAL_SPLIT = 1095+365
 BATCH_SIZE = 50 #None
 BUFFER_SIZE = 10
 
-EVALUATION_INTERVAL = 500
-EPOCHS =50
-REG_PARAM = 0.0001
-ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003
-HIDDEN_NEURONS=3
+EVALUATION_INTERVAL =200
+EPOCHS = 100 #200
+REG_PARAM = 0.0003
+ACT_FUN = 'sigmoid' #'sigmoid' 'softmax'
+LEARN_RATE = 0.001
+HIDDEN_NEURONS=3 #3
 LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 
@@ -105,8 +105,8 @@ model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
                                            input_shape=x_train.shape[-2:],
                                            activation=ACT_FUN,
                                            activity_regularizer= act_reg ,
-                                           kernel_initializer=tf.keras.initializers.RandomNormal(stddev=1),
-                                           bias_initializer=tf.keras.initializers.RandomNormal(stddev=1)
+                                          #  kernel_initializer=tf.keras.initializers.RandomNormal(stddev=1),
+                                          # bias_initializer=tf.keras.initializers.Ones()
 
                                            ))
                                            
