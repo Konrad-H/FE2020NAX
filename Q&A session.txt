@@ -33,3 +33,5 @@ La pinball è una loss di una dist realizzata
 Abbiamo una distrubuzione teorica (CI modello teorico, residuo mu e var)
 
 USARE QUANTILE DI DEMAND VERA
+
+Vossen rete polimi
