@@ -1,0 +1,35 @@
+Solo 2 layer
+Sequenziale
+SIMPLE RNN + DENSE
+
+provare GRU e Long Short Term 
+
+Confrontare con paper i risultati
+
+Graffico con rete neurale
+
+regressori
+
+Input rede neurale paper: dummy variables+trend+seno coseno
+
+
+fittare ARX dopo GLM, WAIT NO
+UNICO REGRESSORE PER ARX
+ARX mecanismo autoregressivo. Quali input?
+
+arima model
+MA(0)
+predict
+
+
+
+usare metodo di callback
+
+no batch > numero dataset
+
+PINBALL ARTICOLO DI WERON, Baviera Messuti
+
+La pinball è una loss di una dist realizzata
+Abbiamo una distrubuzione teorica (CI modello teorico, residuo mu e var)
+
+USARE QUANTILE DI DEMAND VERA

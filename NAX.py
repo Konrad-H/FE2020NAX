@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd 
 
 from tf_ts_functions import  plot_train_history, multivariate_data
-from custom_loss import custom_loss
+from NAX_functions import custom_loss, inverse_std
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
@@ -33,16 +33,18 @@ def rmse(predictions, targets):
 
 
 # %% PLOT AND STANDARDIZE
+# RMSE_NAX 0.058521715696038576 with sigmoid
+
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
 BATCH_SIZE = 50 #None
-BUFFER_SIZE = 10
+BUFFER_SIZE = 5
 
-EVALUATION_INTERVAL =200
-EPOCHS = 100 #200
+EVALUATION_INTERVAL =1093
+EPOCHS = 40 #200
 REG_PARAM = 0.0003
-ACT_FUN = 'sigmoid' #'sigmoid' 'softmax'
+ACT_FUN = 'softmax' #'sigmoid' 'softmax'
 LEARN_RATE = 0.001
 HIDDEN_NEURONS=3 #3
 LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
@@ -91,7 +93,8 @@ print ('Single window of past history : {}'.format(x_train[0].shape))
 
 # %% TRAIN VAL DATA
 train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+# train_data = train_data.cache().shuffle(BUFFER_SIZE)
+train_data = train_data.cache().batch(BATCH_SIZE).repeat()
 
 val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val))
 val_data = val_data.batch(BATCH_SIZE).repeat()
@@ -135,9 +138,20 @@ N_val = len(y_pred)
 the_length = len(df['std_demand'])
 START = TRAIN_SPLIT+past_history+future_target
 
-demand_true = pd.Series(df['std_demand'][START:START+N_val])
-demand_NAX = (demand_true- y_val)+y_pred[:,0]
-demand_GLM = (demand_true- y_val)
+
+
+std_demand_true = pd.Series(df['std_demand'][START:START+N_val])
+std_demand_NAX = (std_demand_true- y_val)+y_pred[:,0]
+std_demand_GLM = (std_demand_true- y_val)
+
+
+# %%
+demand_log_train= np.exp( pd.Series(df['log_demand'][START_SPLIT:TRAIN_SPLIT]) )
+
+demand_true=inverse_std(std_demand_true,demand_log_train) 
+demand_NAX=inverse_std(std_demand_NAX,demand_log_train) 
+demand_GLM=inverse_std(std_demand_GLM,demand_log_train) 
+
 # %%
 plt.figure()
 demand_true.plot()
@@ -149,5 +163,3 @@ RMSE_GLM=rmse(demand_GLM, demand_true)
 RMSE_NAX=rmse(demand_NAX, demand_true)
 print('RMSE_GLM',RMSE_GLM)
 print('RMSE_NAX',RMSE_NAX)
-
-# %%

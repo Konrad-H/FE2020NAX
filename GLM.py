@@ -96,8 +96,9 @@ df_temp['drybulb'] = df_reg.drybulb
 df_temp['dewpnt'] = df_reg.dewpnt
 df_temp = df_temp.rename(columns={'std_demand':'residuals'})
 
-df_temp['std_demand']=df_reg.std_demand
-df_temp['log_demand']=df_reg.log_demand
+df_temp['std_demand'] = df_reg.std_demand
+df_temp['log_demand'] = df_reg.log_demand
+df_temp['demand'] = df_reg.demand
 N=len(regressors)
 x_axis = range(365,365+N)
 calendar_var = pd.DataFrame(regressors, index = x_axis)

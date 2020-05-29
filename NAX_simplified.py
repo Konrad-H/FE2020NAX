@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd 
 
 from tf_ts_functions import  plot_train_history, multivariate_data
-from custom_loss import custom_loss
+from NAX_functions import custom_loss
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
@@ -134,6 +134,7 @@ START = TRAIN_SPLIT+past_history+future_target
 demand_true = pd.Series(df['std_demand'][START:START+N_val])
 demand_NAX = (demand_true- y_val)+y_pred[:,0]
 demand_GLM = (demand_true- y_val)
+
 # %%
 plt.figure()
 demand_true.plot()
