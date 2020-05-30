@@ -8,11 +8,15 @@ import sys
 from data_mining_f import data_mining
 from regressor_f import regressor
 from GLM_f import GLM
+import time
 
 
 # %% Dataset extraction and datamining
-dataset = data_mining() 
-print(dataset)
+tic = time.time()
+dataset = data_mining()
+toc = time.time()
+print(str(toc-tic) + ' sec Elapsed')
+dataset
 
 
 # %% GLM Model
@@ -25,41 +29,19 @@ start_date = 2008
 end_date   = 2010
 y_pred, sigma = GLM(dataset, regressors, start_date, end_date) #predicted values
 residuals = dataset.std_demand - y_pred
-y = dataset.demand  # demand, non std_demand!!!!!
 
 
 # %% pinball
-from scipy.stats import lognorm
-import matplotlib.pyplot as plt
-from dest_f import destd
-
-
+from pinball_f import pinball
 
 start_date = 2011
 end_date = 2011
-y_pin = y[(start_date-2008)*365:(end_date+1-2008)*365]
-y_pin = np.array(y_pin)
-NIP = np.zeros((len(y_pin), 99))
-len(y_pin)
-y_pred_pin_std = y_pred[(start_date-2008)*365:(end_date+1-2008)*365]
-y_pred_pin = destd(y_pred_pin_std)
+y = dataset.demand  # demand, non std_demand!!!!!
 
+pinball_values = pinball(start_date, end_date, y, y_pred, sigma)   # y_pred = output of GLM (prediction of std(log_demand))
 
-for ii in range(99):
-    alpha = (ii+1)/100
-    gauss_quant = lognorm.ppf(alpha, sigma)
-    quant = y_pred_pin + gauss_quant*sigma
-    len(quant)
-    for jj in range(len(y_pin)):
-        if y_pin[jj] > quant[jj]:
-            NIP[jj,ii] = alpha*(y_pin[jj] - quant[jj])
-        else:
-            NIP[jj,ii] = (1-alpha)*(quant[jj] - y_pin[jj])
-
-mean_NIP = np.mean(NIP, axis=0)
-print(mean_NIP.shape)
-
-n = pd.Series(mean_NIP)
+import matplotlib.pyplot as plt
+n = pd.Series(pinball_values)
 plt.figure()
 n.plot()
 plt.show()
