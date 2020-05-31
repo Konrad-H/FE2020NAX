@@ -9,7 +9,7 @@ from regressor_f import regressor
 from GLM_f import GLM
 
 # %% Dataset extraction and datamining
-dataset = data_mining() 
+dataset = data_mining("gefcom.csv") 
 print (dataset)
 
 

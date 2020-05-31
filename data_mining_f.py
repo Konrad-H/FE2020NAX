@@ -1,4 +1,4 @@
-def data_mining ():
+def data_mining (file_loc):
     
     import pandas as pd 
     import numpy as np
@@ -7,7 +7,7 @@ def data_mining ():
     from standardize_f import standardize 
     
     # %%
-    df = pd.read_csv("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
+    df = pd.read_csv(file_loc)
     df.head()
 
 
