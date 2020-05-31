@@ -44,6 +44,7 @@ def GLM(df, regressors, first_year, last_year):
 
     y_pred = linreg.predict(X)
     residuals = y- y_pred
+    sigma = np.sqrt(np.dot(residuals, residuals)/(len(residuals)-1))
 
 
     # %%
@@ -76,7 +77,7 @@ def GLM(df, regressors, first_year, last_year):
     
     real_y = df.std_demand
     pred_y = linreg.predict(regressors)
-    residual = real_y - pred_y
+    residuals = real_y - pred_y
 
     #df_temp=pd.DataFrame(residuals)
     #df_temp['drybulb'] = df_reg.drybulb
@@ -115,5 +116,5 @@ def GLM(df, regressors, first_year, last_year):
     demand_GLM2[1000:1300].plot()
     plt.show()
 
-    return pred_y, X, y
+    return pred_y, sigma
     # %%
