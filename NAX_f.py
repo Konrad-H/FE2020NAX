@@ -58,12 +58,41 @@ STEP = 1
 
 # %%
 
+def prep_data(df,
+                    START_SPLIT = 0,
+                    TRAIN_SPLIT = 1095,
+                    VAL_SPLIT = 1095+365):
+    features_considered = ['drybulb','dewpnt']
+
+    for i in range(1,9):
+        features_considered += [str(i) ]
+
+    features = df[features_considered]
+    features.head()
+
+    labels=np.array(df['residuals'])
+    # %% standardize dataset
+    #features.plot(subplots=True)
+
+    features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
+
+    dataset = features.values
+    data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
+    data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
+
+    dataset = (dataset-data_mean)/data_std
+    return dataset, labels
+
+# %%
+
+
+
 def aggregate_data(features,labels,
             START_SPLIT = 0,
             TRAIN_SPLIT = 1095,
             VAL_SPLIT = 1095+365,
             past_history = 2,
-            future_target = 0,
+            future_target = -1,
             STEP = 1):
 
 
@@ -141,3 +170,6 @@ def demands(y_pred, y_val,df,START):
     demand_NAX=inverse_std(std_demand_NAX,demand_log_train) 
     demand_GLM=inverse_std(std_demand_GLM,demand_log_train) 
     return demand_true, demand_NAX, demand_GLM 
+    
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())

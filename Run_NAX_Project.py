@@ -80,13 +80,19 @@ names = [str(i) for i in range(9)]
 calendar_var = pd.DataFrame(regressors, index = x_axis, columns = names)
 calendar_var_NAX = calendar_var[start_pos:val_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
+                        'log_demand': dataset.log_demand,
                           'residuals': residuals,
                           'drybulb': dataset.drybulb,
                           'dewpnt': dataset.dewpnt})
 temp_data_NAX = temp_data[start_pos:val_pos]
-df_NAX2 = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
+df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 # %% KONRAD ex. 4
+# To add a new cell, type '# %%'
+# To add a new markdown cell, type '# %% [markdown]'
+# %%
+#import key packageskeras.utils.plot_model(model, "my_first_model.png")
+
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -101,11 +107,19 @@ from tf_ts_functions import  plot_train_history, multivariate_data
 from NAX_functions import custom_loss, inverse_std
 from tensorflow.keras.callbacks import EarlyStopping
 
-# %%
-from NAX_f import aggregate_data, NAX_model, demands
+from NAX_f import prep_data, aggregate_data, NAX_model, demands
 
 
-# %% PARAMETERS 
+mpl.rcParams['figure.figsize'] = (8, 6)
+mpl.rcParams['axes.grid'] = False
+
+
+# # %% LOAD DATA
+# df_NAX = pd.read_csv("train_data.csv",index_col=0) 
+# df_NAX.head() #length 1095
+
+# %% PLOT AND STANDARDIZE
+# RMSE_NAX 15776.347510314612 with sigmoid
 
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
@@ -114,67 +128,58 @@ BATCH_SIZE = 50 #None
 BUFFER_SIZE = 5
 
 EVALUATION_INTERVAL = 500
-EPOCHS = 50 #200
+EPOCHS = 300 #200
 REG_PARAM = 0.0001
-ACT_FUN = 'softmax'
+ACT_FUN = 'softmax' #'sigmoid' 'softmax'
 LEARN_RATE = 0.003
 HIDDEN_NEURONS=3 #3
-LOSS_FUNCTION =  custom_loss
-OUTPUT_NEURONS= 2
-INPUT_SHAPE = (2,10)
-STOPPATIENCE = 5
+LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
+OUTPUT_NEURONS= 2 #2
+STOPPATIENCE = 10
 
 past_history = 2
 future_target = 0
 STEP = 1
 
-# %% Only Consider useful features
+# opt=tf.keras.optimizers.RMSprop()
+tf.random.set_seed(14)
+features,labels= prep_data(df_NAX,
+                    START_SPLIT = START_SPLIT,
+                    TRAIN_SPLIT = TRAIN_SPLIT,
+                    VAL_SPLIT = VAL_SPLIT)
+x_train, y_train,x_val, y_val = aggregate_data(features,labels,
+                                  START_SPLIT = START_SPLIT,
+                                  TRAIN_SPLIT = TRAIN_SPLIT,
+                                  VAL_SPLIT = VAL_SPLIT,
+                                  past_history = past_history,
+                                  future_target = future_target,
+                                  STEP = STEP)
 
-df_NAX = pd.read_csv("train_data.csv",index_col=0) 
 
-# %%
-
-features_considered = ['drybulb','dewpnt']
-
-for i in range(1,9):
-    features_considered += [str(i) ]
-
-features = df_NAX[features_considered]
-features.head()
-
-labels=np.array(df_NAX['residuals'])
-# %% standardize dataset
-#features.plot(subplots=True)
-
-features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
-
-dataset = features.values
-data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
-data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
-
-dataset = (dataset-data_mean)/data_std
-# %%
-
-past_history = 2
-future_target = 0
-STEP = 1
-
-x_train, y_train,x_val, y_val = aggregate_data(dataset,labels)
-# %% TRAIN VAL DATA
-
+print ('Single window of past history : {}'.format(x_train[0].shape))
 
 # %%
 
-model = NAX_model()
+model = NAX_model(INPUT_SHAPE=x_train.shape[-2:],
+            REG_PARAM = REG_PARAM,
+            ACT_FUN = ACT_FUN,
+            LEARN_RATE = LEARN_RATE,
+            HIDDEN_NEURONS=HIDDEN_NEURONS ,
+            OUTPUT_NEURONS= OUTPUT_NEURONS,
+            LOSS_FUNCTION =  LOSS_FUNCTION)
+
+
+# %%
 
 # %%
 EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=STOPPATIENCE)
-model.fit(
+history=model.fit(
     x=x_train, y=y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[EARLYSTOP],
-    validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,
+    validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,shuffle=True
 )
 
-# %% PLOT RESULTS AND PRINT RMSE
+plot_train_history(history,"Loss of model")
+# %%
 y_pred =model.predict(x_val)
 START = TRAIN_SPLIT+past_history+future_target
 demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START)
@@ -189,8 +194,6 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 print('RMSE_GLM',rmse(demand_GLM, demand_true))
 print('RMSE_NAX',rmse(demand_NAX, demand_true))
-
-
 # %%
 # HYPER PARAMETERS READY
 # %% ex. 5
