@@ -1,3 +1,9 @@
 
 gefcom.csv
 __pycache__/tf_ts_functions.cpython-38.pyc
+__pycache__/ARX_f.cpython-38.pyc
+__pycache__/backtest_f.cpython-38.pyc
+__pycache__/ConfidenceInterval_f.cpython-38.pyc
+__pycache__/data_mining_f.cpython-38.pyc
+__pycache__/dest_f.cpython-38.pyc
+__pycache__/GLM_f.cpython-38.pyc
