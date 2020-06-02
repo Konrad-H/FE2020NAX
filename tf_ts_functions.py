@@ -20,13 +20,13 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
                       target_size, step, single_step=False):
   data = []
   labels = []
-
+  history_size = history_size-1
   start_index = start_index + history_size
   if end_index is None:
     end_index = len(dataset) - target_size
 
   for i in range(start_index, end_index):
-    indices = range(i-history_size, i, step)
+    indices = range(i-history_size, i+1, step)
     data.append(dataset[indices])
 
     if single_step:
