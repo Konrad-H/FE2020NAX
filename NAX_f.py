@@ -61,7 +61,8 @@ STEP = 1
 def prep_data(df,
                     START_SPLIT = 0,
                     TRAIN_SPLIT = 1095,
-                    VAL_SPLIT = 1095+365):
+                    VAL_SPLIT = 1095+365,
+                    DAYS_NOT_STD=False):
     features_considered = ['drybulb','dewpnt']
 
     for i in range(1,9):
@@ -73,8 +74,8 @@ def prep_data(df,
     labels=np.array(df['residuals'])
     # %% standardize dataset
     #features.plot(subplots=True)
-
-    features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
+    if DAYS_NOT_STD:
+        features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
 
     dataset = features.values
     data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
@@ -164,12 +165,14 @@ def demands(y_pred, y_val,df,START):
     std_demand_true = pd.Series(df['std_demand'][START:START+N_val])
     std_demand_NAX = (std_demand_true- y_val)+y_pred[:,0]
     std_demand_GLM = (std_demand_true- y_val)
-    demand_log_train= np.exp( pd.Series(df['log_demand'][START_SPLIT:TRAIN_SPLIT]) )
+    demand_log_train= pd.Series(df['log_demand'][START_SPLIT:TRAIN_SPLIT]) 
 
-    demand_true=inverse_std(std_demand_true,demand_log_train) 
-    demand_NAX=inverse_std(std_demand_NAX,demand_log_train) 
-    demand_GLM=inverse_std(std_demand_GLM,demand_log_train) 
+    demand_true=np.exp(inverse_std(std_demand_true,demand_log_train) )
+    demand_NAX=np.exp(inverse_std(std_demand_NAX,demand_log_train) )
+    demand_GLM=np.exp(inverse_std(std_demand_GLM,demand_log_train) )
     return demand_true, demand_NAX, demand_GLM 
     
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
+
+

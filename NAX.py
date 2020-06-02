@@ -47,18 +47,17 @@ LEARN_RATE = 0.003
 HIDDEN_NEURONS=3 #3
 LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
-STOPPATIENCE = 10
+STOPPATIENCE = 50
 
 past_history = 2
 future_target = -1
 STEP = 1
 
-# opt=tf.keras.optimizers.RMSprop()
 tf.random.set_seed(14)
 features,labels= prep_data(df_NAX,
                     START_SPLIT = START_SPLIT,
                     TRAIN_SPLIT = TRAIN_SPLIT,
-                    VAL_SPLIT = VAL_SPLIT)
+                    VAL_SPLIT = VAL_SPLIT,DAYS_NOT_STD=True)
 x_train, y_train,x_val, y_val = aggregate_data(features,labels,
                                   START_SPLIT = START_SPLIT,
                                   TRAIN_SPLIT = TRAIN_SPLIT,

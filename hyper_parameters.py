@@ -13,6 +13,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 
 from NAX_f import prep_data, aggregate_data, NAX_model, demands, rmse
 
+
 # %% load dataset
 df_NAX = pd.read_csv("train_data.csv",index_col=0) 
 df_NAX.head()   # length 1095
@@ -23,6 +24,13 @@ VAL_SPLIT = 1095+365
 past_history = 2
 future_target = -1
 STEP = 1
+
+LIST_HIDDEN_NEURONS = [3, 4, 5, 6] #[3, 4, 5, 6]
+LIST_ACT_FUN = ['softmax', 'sigmoid'] #['softmax', 'sigmoid']
+LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001] #[0.1, 0.01, 0.003, 0.001]
+LIST_BATCH_SIZE = [50,5000] # manca no batch, None non funziona
+LIST_REG_PARAM = [0.001, 0.0001, 0]
+
 
 features,labels= prep_data(df_NAX,
                     START_SPLIT = START_SPLIT,
@@ -54,11 +62,6 @@ EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=ST
 
 # %% 
 
-LIST_HIDDEN_NEURONS = [3, 4, 5, 6] #[3, 4, 5, 6]
-LIST_ACT_FUN = ['softmax', 'sigmoid'] #['softmax', 'sigmoid']
-LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001] #[0.1, 0.01, 0.003, 0.001]
-LIST_BATCH_SIZE = [50,5000] # manca no batch, None non funziona
-LIST_REG_PARAM = [0.001, 0.0001, 0]
 #[0.001, 0.0001, 0]
 L1,L2,L3,L4,L5=len(LIST_HIDDEN_NEURONS), len(LIST_ACT_FUN), len(LIST_LEARN_RATE), len(LIST_REG_PARAM), len(LIST_BATCH_SIZE)
 

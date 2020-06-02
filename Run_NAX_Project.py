@@ -20,7 +20,6 @@ print(str(toc-tic) + ' sec Elapsed\n')
 print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
  
 # %%
-
 start_date = 2009
 end_date   = 2010
 start_pos = (start_date -2008)*365
@@ -95,116 +94,65 @@ temp_data_NAX = temp_data[start_pos:val_pos]
 df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 # %% KONRAD ex. 4
-# To add a new cell, type '# %%'
-# To add a new markdown cell, type '# %% [markdown]'
-# %%
-#import key packageskeras.utils.plot_model(model, "my_first_model.png")
+# %% IMPORT HYPER PARAM FUNCTION AND LOAD CONSTANTS
+from hyper_param_f import find_hyperparam
 
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+MAX_EPOCHS = 500 #
+STOPPATIENCE = 50
 
-import tensorflow as tf
-
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd 
-
-from tf_ts_functions import  plot_train_history, multivariate_data
-from NAX_functions import custom_loss, inverse_std
-from tensorflow.keras.callbacks import EarlyStopping
-
-from NAX_f import prep_data, aggregate_data, NAX_model, demands
-
-
-mpl.rcParams['figure.figsize'] = (8, 6)
-mpl.rcParams['axes.grid'] = False
-
-
-# # %% LOAD DATA
-# df_NAX = pd.read_csv("train_data.csv",index_col=0) 
-# df_NAX.head() #length 1095
-
-# %% PLOT AND STANDARDIZE
-# RMSE_NAX 15776.347510314612 with sigmoid
+LIST_HIDDEN_NEURONS = [3, 4, 5, 6] #[3, 4, 5, 6]
+LIST_ACT_FUN = ['softmax', 'sigmoid'] #['softmax', 'sigmoid']
+LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001] #[0.1, 0.01, 0.003, 0.001]
+LIST_BATCH_SIZE = [50,5000] # manca no batch, None non funziona
+LIST_REG_PARAM = [0.001, 0.0001, 0]
 
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
-BATCH_SIZE = 50 #None
-BUFFER_SIZE = 5
 
-EVALUATION_INTERVAL = 500
-EPOCHS = 20 #200
-REG_PARAM = 0.0001
-ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003
-HIDDEN_NEURONS=3 #3
-LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
-OUTPUT_NEURONS= 2 #2
-STOPPATIENCE = 10
+VERBOSE = 1
+VERBOSE_EARLY = 1
 
-past_history = 2
-future_target = -1
-STEP = 1
-
-# opt=tf.keras.optimizers.RMSprop()
+# %%
 tf.random.set_seed(14)
-features,labels= prep_data(df_NAX,
-                    START_SPLIT = START_SPLIT,
-                    TRAIN_SPLIT = TRAIN_SPLIT,
-                    VAL_SPLIT = VAL_SPLIT)
-x_train, y_train,x_val, y_val = aggregate_data(features,labels,
-                                  START_SPLIT = START_SPLIT,
-                                  TRAIN_SPLIT = TRAIN_SPLIT,
-                                  VAL_SPLIT = VAL_SPLIT,
-                                  past_history = past_history,
-                                  future_target = future_target,
-                                  STEP = STEP)
+
+# BEST COMBINATIOS
+# 3.65 %  -- [3, 'softmax', 0.01, 0.001, 50]
+# 7752.083425213432
+# 4.17 %  -- [3, 'softmax', 0.01, 0.001, 5000]
+# Epoch 00218: early stopping
+# 7718.890737165838
+
+min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
+                    MAX_EPOCHS = MAX_EPOCHS, #
+                    STOPPATIENCE = STOPPATIENCE,
+
+                    LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS, #[3, 4, 5, 6]
+                    LIST_ACT_FUN =LIST_ACT_FUN, #['softmax', 'sigmoid']
+                    LIST_LEARN_RATE = LIST_LEARN_RATE, #[0.1, 0.01, 0.003, 0.001]
+                    LIST_BATCH_SIZE = LIST_BATCH_SIZE, # manca no batch, None non funziona
+                    LIST_REG_PARAM = LIST_REG_PARAM,
+                    VERBOSE= VERBOSE,
+                    VERBOSE_EARLY = VERBOSE_EARLY)
+
+# %% Choose Hyperparameters
+
+HIDDEN_NEURONS=min_hyper_parameters[0] # ??
+ACT_FUN = min_hyper_parameters[1] # ??
+LEARN_RATE = min_hyper_parameters[2] # ??
+REG_PARAM = min_hyper_parameters[3] # ??
+BATCH_SIZE = min_hyper_parameters[4] # ??
 
 
-print ('Single window of past history : {}'.format(x_train[0].shape))
+
+
 
 # %%
 
-model = NAX_model(INPUT_SHAPE=x_train.shape[-2:],
-            REG_PARAM = REG_PARAM,
-            ACT_FUN = ACT_FUN,
-            LEARN_RATE = LEARN_RATE,
-            HIDDEN_NEURONS=HIDDEN_NEURONS ,
-            OUTPUT_NEURONS= OUTPUT_NEURONS,
-            LOSS_FUNCTION =  LOSS_FUNCTION)
 
-
-# %%
-
-# %%
-EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=STOPPATIENCE)
-history=model.fit(
-    x=x_train, y=y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[EARLYSTOP],
-    validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,shuffle=True
-)
-
-plot_train_history(history,"Loss of model")
-# %%
-y_pred =model.predict(x_val)
-START = TRAIN_SPLIT+past_history+future_target
-demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START,M,m)
-
-plt.figure()
-demand_true.plot()
-demand_NAX.plot()
-demand_GLM.plot()
-plt.show()
-
-def rmse(predictions, targets):
-    return np.sqrt(((predictions - targets) ** 2).mean())
-print('RMSE_GLM',rmse(demand_GLM, demand_true))
-print('RMSE_NAX',rmse(demand_NAX, demand_true))
-# %%
 # HYPER PARAMETERS READY
 # %% ex. 5
-
+#
 start_date = 2009
 end_date   = 2011
 test_date  = 2012
