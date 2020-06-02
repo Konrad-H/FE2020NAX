@@ -1,59 +1,50 @@
-def ARX(df, first_year, last_year):
+def ARX(df, first_year, last_year, test_year):
 
     import numpy as np
-    import pandas as pd 
-
-    #import pyflux as pf
+    import pandas as pd
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     import statsmodels.api as sm
-    # lasst year is intendeed as 31/12 of last year
-    import statsmodels.api as sm
-    # lasst year is intendeed as 31/12 of last year
-        
+
+    # last year is intendeed as 31/12 of last year
     last_year = last_year + 1
+    test_year = test_year + 1
 
-    firsty_pos = (first_year - 2008)*365
-    lasty_pos = (last_year - 2008)*365
+    firsty_pos = (first_year - first_year)*365
+    lasty_pos = (last_year - first_year)*365
+    testy_pos = (test_year - first_year)*365
 
-    X = df.iloc[:,[2,3,5,6,7,8,9,10,11,12]]
+    # %%
+    # Build ARX model
+    
+    X = df.iloc[:,[2,3,5,6,7,8,9,10,11,12]] # take drybulb, dewpnt, all regressors except intercept's one
     y = df.std_demand
-    X_arx = X.iloc[firsty_pos:lasty_pos,:]
-    y_arx = y.iloc[firsty_pos:lasty_pos]
+    X_train = X.iloc[firsty_pos:lasty_pos,:]
+    y_train = y.iloc[firsty_pos:lasty_pos]
 
+    model=sm.tsa.ARIMA(endog=y_train,exog=X_train,order=[1,0,0])
+    results=model.fit()
 
-    # %%
-
-    model3=sm.tsa.ARIMA(endog=y_arx,exog=X_arx,order=[1,0,0])
-    results3=model3.fit()
-
-    y_pred = results3.predict(start=0)
-    residuals = y_arx - y_pred
+    # Get std. dev. of the model
+    y_pred_train, _, _ = results.forecast(steps=len(X_train), exog=X_train, alpha=0.95)
+    residuals = y_train - y_pred_train
     sigma = np.sqrt(np.dot(residuals, residuals)/(len(residuals)-1))
-    print(sigma)
-
-        # %%
-        # Build matrix for Neural Network
-    X_pre = X.iloc[lasty_pos:,:]
-    y_pre = y.iloc[lasty_pos:]
-    pred_y = results3.predict(start=0, exog=X_pre)
-    residuals = y_pre - pred_y
-
 
     # %%
-    #%%
+    # Prediction on test set
+    X_test = X.iloc[lasty_pos:testy_pos,:]
+    y_pred_test, _, _ = results.forecast(steps=len(X_test), exog=X_test, alpha=0.95)
 
-    demand_std = pd.Series(y_arx)
-    demand_ARX = pd.Series(y_pred)
-    #demand_ARX2 = pd.Series(y_pred_m[0])
     # %%
+    # Graph on train set
+    x_axis = y_train.index
+    demand_std = pd.Series(y_train)
+    demand_ARX = pd.Series(y_pred_train, index=x_axis)
+    
     plt.figure()
-
-
     demand_std.plot()
     demand_ARX.plot()
-    #demand_ARX2.plot()
     plt.show()
 
-    return pred_y, sigma
+    return y_pred_test, sigma
     # %%

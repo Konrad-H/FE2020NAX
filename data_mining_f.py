@@ -1,11 +1,11 @@
-def data_mining ():
+def data_mining():
     
     import pandas as pd 
     import numpy as np
     from standardize_f import standardize 
     
     # %% Load Data
-    df = pd.read_csv("gefcom.csv")
+    df = pd.read_csv("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
     # df.head()
 
     # %% Filter Data
@@ -19,6 +19,13 @@ def data_mining ():
                             'dewpnt': df_cut['dewpnt'].groupby(groups).mean()})
     ready_df = ready_df.reset_index(level = ['date','year', 'month', 'day_of_week', 'holiday'])
     # ready_df.head()
+
+    return ready_df
+
+
+def data_standardize(ready_df):
+    import numpy as np
+    from standardize_f import standardize
 
     # %% Standardize DF
     df_std = ready_df 
