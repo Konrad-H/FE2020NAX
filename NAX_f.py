@@ -176,3 +176,69 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 
+from NAX_f import prep_data, aggregate_data, NAX_model, demands
+
+
+mpl.rcParams['figure.figsize'] = (8, 6)
+mpl.rcParams['axes.grid'] = False
+
+
+# %% LOAD DATA
+df_NAX = pd.read_csv("train_data.csv",index_col=0) 
+df_NAX.head() #length 1095
+## UNIVARIATE MODEL 
+## TO UNDERSTAND THIS 
+
+# %% PLOT AND STANDARDIZE
+# RMSE_NAX 15776.347510314612 with sigmoid
+
+def one_NAX_iteration(df,START_SPLIT = 0,
+                TRAIN_SPLIT = 1095,
+                VAL_SPLIT = 1095+365,
+                BATCH_SIZE = 50,
+                EPOCHS = 500,
+                REG_PARAM = 0.0001,
+                ACT_FUN = 'softmax',
+                LEARN_RATE = 0.003,
+                HIDDEN_NEURONS=3 ,
+                LOSS_FUNCTION =  custom_loss,
+                OUTPUT_NEURONS= 2,
+                STOPPATIENCE = 50,
+                past_history = 2,
+                future_target = -1,
+                STEP = 1,
+                VERBOSE= 1,
+                VERBOSE_EARLY = 1):
+
+
+    features,labels= prep_data(df_NAX,
+                        START_SPLIT = START_SPLIT,
+                        TRAIN_SPLIT = TRAIN_SPLIT,
+                        VAL_SPLIT = VAL_SPLIT,DAYS_NOT_STD=True)
+    x_train, y_train,x_val, y_val = aggregate_data(features,labels,
+                                    START_SPLIT = START_SPLIT,
+                                    TRAIN_SPLIT = TRAIN_SPLIT,
+                                    VAL_SPLIT = VAL_SPLIT,
+                                    past_history = past_history,
+                                    future_target = future_target,
+                                    STEP = STEP)
+
+    # %%
+
+    model = NAX_model(INPUT_SHAPE=x_train.shape[-2:],
+                REG_PARAM = REG_PARAM,
+                ACT_FUN = ACT_FUN,
+                LEARN_RATE = LEARN_RATE,
+                HIDDEN_NEURONS=HIDDEN_NEURONS ,
+                OUTPUT_NEURONS= OUTPUT_NEURONS,
+                LOSS_FUNCTION =  LOSS_FUNCTION)
+
+    EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
+    history=model.fit(
+        x=x_train, y=y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=VERBOSE, callbacks=[EARLYSTOP],
+        validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,shuffle=True
+    )
+    # %%
+    y_pred =model.predict(x_val)
+    return y_pred,history
+

@@ -7,6 +7,7 @@ import os
 import sys
 from data_mining_f import data_mining, data_standardize
 from regressor_f import regressor
+from tensorflow.random import set_seed
 from GLM_f import GLM
 import time
 from dest_f import destd 
@@ -114,7 +115,7 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # %%
-tf.random.set_seed(14)
+set_seed(14)
 
 # BEST COMBINATIOS
 # 3.65 %  -- [3, 'softmax', 0.01, 0.001, 50]
@@ -134,6 +135,15 @@ min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
                     LIST_REG_PARAM = LIST_REG_PARAM,
                     VERBOSE= VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY)
+# %% STORED FOR EASY ACCESS
+all_RMSE = np.load("all_RMSE_1.npy")
+argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
+min_hyper_parameters = [ LIST_HIDDEN_NEURONS[argmin[0]],
+                        LIST_ACT_FUN[argmin[1]], 
+                        LIST_LEARN_RATE[argmin[2]], 
+                        LIST_REG_PARAM[argmin[3]],
+                        LIST_BATCH_SIZE[argmin[4]] ]
+min_RMSE = np.min(all_RMSE,axis=None)
 
 # %% Choose Hyperparameters
 
@@ -145,7 +155,24 @@ BATCH_SIZE = min_hyper_parameters[4] # ??
 
 
 
-
+# %%
+from NAX_f import one_NAX_iteration
+from tf_ts_functions import  plot_train_history
+MAX_EPOCHS = 500 
+STOPPATIENCE = 50
+VERBOSE=1
+VERBOSE_EARLY=1
+y_pred,history = one_NAX_iteration(df_NAX,
+                    BATCH_SIZE = BATCH_SIZE,
+                    EPOCHS = MAX_EPOCHS,
+                    REG_PARAM = REG_PARAM,
+                    ACT_FUN = ACT_FUN,
+                    LEARN_RATE = LEARN_RATE,
+                    HIDDEN_NEURONS=HIDDEN_NEURONS ,
+                    STOPPATIENCE = STOPPATIENCE,
+                    VERBOSE= VERBOSE,
+                    VERBOSE_EARLY = VERBOSE_EARLY)
+plot_train_history(history,"Loss of model")
 
 # %%
 
@@ -165,6 +192,7 @@ residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 
 calendar_var_NAX = calendar_var[start_pos:test_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
+                        'log_demand': dataset.log_demand,
                               'residuals': residuals,
                               'drybulb': dataset.drybulb,
                               'dewpnt': dataset.dewpnt})                             

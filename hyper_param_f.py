@@ -100,16 +100,19 @@ def find_hyperparam(df_NAX,
                         demand_true, demand_NAX, _ = demands(y_pred,y_val, df_NAX,START)
                         RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
                         if VERBOSE==1:
-                            print(rmse(demand_NAX,demand_true))
-                            RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
                             c +=1
+                            print(c," / ",N_SCENARIOS)
+                            print(rmse(demand_NAX,demand_true),' --',hyper_parameters)
+                            RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
+                            
                             hyper_parameters = [ LIST_HIDDEN_NEURONS[n1],
                             LIST_ACT_FUN[n2], 
                             LIST_LEARN_RATE[n3], 
                             LIST_REG_PARAM[n4],
                             LIST_BATCH_SIZE[n5]]
                             # print(round(c/N_SCENARIOS,4)*100,'% )
-                            print(round(c," / ",N_SCENARIOS,' --',hyper_parameters)
+                            
+
 
     argmin = np.unravel_index(np.argmin(RMSE,axis=None),RMSE.shape)
     hyper_parameters = [ LIST_HIDDEN_NEURONS[argmin[0]],
