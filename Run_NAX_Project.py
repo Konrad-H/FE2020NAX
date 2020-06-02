@@ -14,11 +14,13 @@ import matplotlib.pyplot as plt
 
 # %% Dataset extraction and datamining
 tic = time.time()
-dataset = data_mining()
+dataset = data_mining("gefcom.csv")
 toc = time.time()
 print(str(toc-tic) + ' sec Elapsed\n')
 print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
  
+# %%
+
 start_date = 2009
 end_date   = 2010
 start_pos = (start_date -2008)*365
@@ -39,9 +41,6 @@ global M
 M = max(dataset.log_demand)
 global m 
 m = min(dataset.log_demand)
-
-
-# %% ex. 1
 
 # %% GLM Model
 # define regressors
@@ -77,20 +76,123 @@ plt.show()
 # Needed data stored in a DataFrame
 
 x_axis = range(len(regressors))
-calendar_var = pd.DataFrame(regressors, index = x_axis)
+names = [str(i) for i in range(9)]
+calendar_var = pd.DataFrame(regressors, index = x_axis, columns = names)
 calendar_var_NAX = calendar_var[start_pos:val_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
                           'residuals': residuals,
                           'drybulb': dataset.drybulb,
                           'dewpnt': dataset.dewpnt})
 temp_data_NAX = temp_data[start_pos:val_pos]
-dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
+df_NAX2 = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 # %% KONRAD ex. 4
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-# now hyper param.s have been established
+import tensorflow as tf
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd 
+
+from tf_ts_functions import  plot_train_history, multivariate_data
+from NAX_functions import custom_loss, inverse_std
+from tensorflow.keras.callbacks import EarlyStopping
+
+# %%
+from NAX_f import aggregate_data, NAX_model, demands
 
 
+# %% PARAMETERS 
+
+START_SPLIT = 0
+TRAIN_SPLIT = 1095
+VAL_SPLIT = 1095+365
+BATCH_SIZE = 50 #None
+BUFFER_SIZE = 5
+
+EVALUATION_INTERVAL = 500
+EPOCHS = 50 #200
+REG_PARAM = 0.0001
+ACT_FUN = 'softmax'
+LEARN_RATE = 0.003
+HIDDEN_NEURONS=3 #3
+LOSS_FUNCTION =  custom_loss
+OUTPUT_NEURONS= 2
+INPUT_SHAPE = (2,10)
+STOPPATIENCE = 5
+
+past_history = 2
+future_target = 0
+STEP = 1
+
+# %% Only Consider useful features
+
+df_NAX = pd.read_csv("train_data.csv",index_col=0) 
+
+# %%
+
+features_considered = ['drybulb','dewpnt']
+
+for i in range(1,9):
+    features_considered += [str(i) ]
+
+features = df_NAX[features_considered]
+features.head()
+
+labels=np.array(df_NAX['residuals'])
+# %% standardize dataset
+#features.plot(subplots=True)
+
+features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
+
+dataset = features.values
+data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
+data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
+
+dataset = (dataset-data_mean)/data_std
+# %%
+
+past_history = 2
+future_target = 0
+STEP = 1
+
+x_train, y_train,x_val, y_val = aggregate_data(dataset,labels)
+# %% TRAIN VAL DATA
+
+
+# %%
+
+model = NAX_model()
+
+# %%
+EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=STOPPATIENCE)
+model.fit(
+    x=x_train, y=y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[EARLYSTOP],
+    validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,
+)
+
+# %% PLOT RESULTS AND PRINT RMSE
+y_pred =model.predict(x_val)
+START = TRAIN_SPLIT+past_history+future_target
+demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START)
+
+plt.figure()
+demand_true.plot()
+demand_NAX.plot()
+demand_GLM.plot()
+plt.show()
+
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
+print('RMSE_GLM',rmse(demand_GLM, demand_true))
+print('RMSE_NAX',rmse(demand_NAX, demand_true))
+
+
+# %%
+# HYPER PARAMETERS READY
 # %% ex. 5
 
 start_date = 2009
@@ -236,8 +338,6 @@ backplot_GLM.plot()
 backplot_ARX.plot()
 confplot.plot()
 plt.show()
-
-a=b
 
 
 

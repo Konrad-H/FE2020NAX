@@ -17,6 +17,9 @@ from tf_ts_functions import  plot_train_history, multivariate_data
 from NAX_functions import custom_loss, inverse_std
 from tensorflow.keras.callbacks import EarlyStopping
 
+from NAX_f import aggregate_data, NAX_model, demands
+
+
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
@@ -43,7 +46,7 @@ BATCH_SIZE = 50 #None
 BUFFER_SIZE = 5
 
 EVALUATION_INTERVAL = 500
-EPOCHS = 50 #200
+EPOCHS = 300 #200
 REG_PARAM = 0.0001
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
 LEARN_RATE = 0.003
@@ -51,6 +54,11 @@ HIDDEN_NEURONS=3 #3
 LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 STOPPATIENCE = 10
+
+past_history = 2
+future_target = 0
+STEP = 1
+
 # opt=tf.keras.optimizers.RMSprop()
 OPT = tf.keras.optimizers.Adam(LEARN_RATE)
 tf.random.set_seed(14)
@@ -76,18 +84,15 @@ data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
 dataset = (dataset-data_mean)/data_std
 # %%
 
-past_history = 2
-future_target = 0
-STEP = 1
+x_train, y_train,x_val, y_val = aggregate_data(dataset,labels,
+                                  START_SPLIT = START_SPLIT,
+                                  TRAIN_SPLIT = TRAIN_SPLIT,
+                                  VAL_SPLIT = VAL_SPLIT,
+                                  past_history = past_history,
+                                  future_target = future_target,
+                                  STEP = STEP)
 
-x_train, y_train = multivariate_data(dataset, labels, START_SPLIT,
-                                                   TRAIN_SPLIT, past_history,
-                                                   future_target, STEP,
-                                                   single_step=True)
-x_val, y_val = multivariate_data(dataset, labels,
-                                               TRAIN_SPLIT, VAL_SPLIT, past_history,
-                                               future_target, STEP,
-                                               single_step=True)
+
 print ('Single window of past history : {}'.format(x_train[0].shape))
 
 # %% TRAIN VAL DATA
@@ -100,25 +105,13 @@ val_data = val_data.batch(BATCH_SIZE).repeat()
 
 # %%
 
-model = tf.keras.models.Sequential()
-
-act_reg = tf.keras.regularizers.l1 (REG_PARAM)
-
-model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
-                                           input_shape=x_train.shape[-2:],
-                                           activation=ACT_FUN,
-                                           activity_regularizer= act_reg ,
-                                          #  kernel_initializer=tf.keras.initializers.RandomNormal(stddev=1),
-                                          # bias_initializer=tf.keras.initializers.Ones()
-
-                                           ))
-                                           
-model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
-
-
-
-# opt = tf.keras.optimizers.RMSprop()
-model.compile(optimizer=OPT, loss=LOSS_FUNCTION)
+model = NAX_model(INPUT_SHAPE=x_train.shape[-2:],
+            REG_PARAM = REG_PARAM,
+            ACT_FUN = ACT_FUN,
+            LEARN_RATE = LEARN_RATE,
+            HIDDEN_NEURONS=HIDDEN_NEURONS ,
+            OUTPUT_NEURONS= OUTPUT_NEURONS,
+            LOSS_FUNCTION =  LOSS_FUNCTION)
 
 
 # %%
@@ -128,12 +121,11 @@ for x, y in val_data.take(1):
 
 # %%
 EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=STOPPATIENCE)
-#%%
-history = model.fit(train_data, epochs=EPOCHS,
-                                            steps_per_epoch=EVALUATION_INTERVAL,
-                                            validation_data=val_data,
-                                            validation_steps=50,
-                                            callbacks=[EARLYSTOP])
+history=model.fit(
+    x=x_train, y=y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=1, callbacks=[EARLYSTOP],
+    validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,
+)
+
 plot_train_history(history,"Loss of model")
 # %%
 y_pred =model.predict(x_val)

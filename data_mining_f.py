@@ -1,11 +1,11 @@
-def data_mining():
+def data_mining(PATH):
     
     import pandas as pd 
     import numpy as np
     from standardize_f import standardize 
     
     # %% Load Data
-    df = pd.read_csv("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
+    df = pd.read_csv(PATH)
     # df.head()
 
     # %% Filter Data
