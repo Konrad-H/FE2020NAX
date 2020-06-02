@@ -73,6 +73,21 @@ demand_pred_plt.plot()
 plt.show()
 
 # %%
+# Plot autocorrelation and partial autocorrelation of the residuals
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
+ 
+plt.figure()
+plot_acf(residuals_plt, lags = range(0,51), alpha = None)
+plt.xlabel('Days')
+plt.show()
+ 
+plt.figure()
+plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
+plt.xlabel('Days')
+plt.show()
+
+# %%
 
 from rmse_f import rmse
 print('RMSE_GLM')
