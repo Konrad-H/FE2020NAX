@@ -55,7 +55,7 @@ start_pos = (start_date -2008)*365
 end_pos   = (end_date+1 -2008)*365
 val_pos   = (val_date+1 -2008)*365
 y_GLM_val, y_GLM_train, sigma = GLM(dataset, regressors, start_date, end_date, val_date) #predicted values
-y_GLM = np.concatenate([y_GLM_val, y_GLM_train])
+y_GLM = np.concatenate([y_GLM_train,y_GLM_val])
 residuals = dataset.std_demand[start_pos:val_pos] - y_GLM
 
 
@@ -64,13 +64,20 @@ residuals = dataset.std_demand[start_pos:val_pos] - y_GLM
 
 x_axis = range(start_pos, end_pos)
 demand_plt = pd.Series(dataset.demand[start_pos:end_pos],index=x_axis)
-demand_pred = destd(y_GLM_train)
+demand_pred = destd(y_GLM_train,M,m)
 demand_pred_plt = pd.Series(demand_pred,index=x_axis)
 
 plt.figure()
 demand_plt.plot()
 demand_pred_plt.plot()
 plt.show()
+
+# %%
+
+from rmse_f import rmse
+print('RMSE_GLM')
+print(rmse(dataset.demand[end_pos:val_pos],destd(y_GLM_val,M,m)))
+
 
 # %% NAX Model
 # Needed data stored in a DataFrame
@@ -128,7 +135,7 @@ BATCH_SIZE = 50 #None
 BUFFER_SIZE = 5
 
 EVALUATION_INTERVAL = 500
-EPOCHS = 300 #200
+EPOCHS = 20 #200
 REG_PARAM = 0.0001
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
 LEARN_RATE = 0.003
@@ -138,7 +145,7 @@ OUTPUT_NEURONS= 2 #2
 STOPPATIENCE = 10
 
 past_history = 2
-future_target = 0
+future_target = -1
 STEP = 1
 
 # opt=tf.keras.optimizers.RMSprop()
@@ -182,7 +189,7 @@ plot_train_history(history,"Loss of model")
 # %%
 y_pred =model.predict(x_val)
 START = TRAIN_SPLIT+past_history+future_target
-demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START)
+demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START,M,m)
 
 plt.figure()
 demand_true.plot()

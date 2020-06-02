@@ -4,19 +4,14 @@ import os
 
 import tensorflow as tf
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd 
 
-from tf_ts_functions import  plot_train_history, multivariate_data
+
 from NAX_functions import custom_loss, inverse_std
 from tensorflow.keras.callbacks import EarlyStopping
 
 from NAX_f import prep_data, aggregate_data, NAX_model, demands, rmse
-mpl.rcParams['figure.figsize'] = (8, 6)
-mpl.rcParams['axes.grid'] = False
-
 
 # %% load dataset
 df_NAX = pd.read_csv("train_data.csv",index_col=0) 
@@ -45,14 +40,13 @@ x_train, y_train,x_val, y_val = aggregate_data(features,labels,
 
 
 # %%
-MAX_EPOCHS = 200 #
+MAX_EPOCHS = 500 #
+STOPPATIENCE = 10
 #EVALUATION_INTERVAL = 500
 
 LIST_LOSS_FUNCTION = [custom_loss, 'mse']
 LOSS_FUNCTION = LIST_LOSS_FUNCTION[0]
 
-INPUT_SHAPE = (2,10)
-STOPPATIENCE = 10
 START = TRAIN_SPLIT+past_history+future_target
 EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=STOPPATIENCE)
 

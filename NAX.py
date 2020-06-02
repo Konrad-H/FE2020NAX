@@ -40,7 +40,7 @@ BATCH_SIZE = 50 #None
 BUFFER_SIZE = 5
 
 EVALUATION_INTERVAL = 500
-EPOCHS = 300 #200
+EPOCHS = 500 #200
 REG_PARAM = 0.0001
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
 LEARN_RATE = 0.003
@@ -106,3 +106,5 @@ def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 print('RMSE_GLM',rmse(demand_GLM, demand_true))
 print('RMSE_NAX',rmse(demand_NAX, demand_true))
+
+# %%
