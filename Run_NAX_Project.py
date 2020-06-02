@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 
 # %% Dataset extraction and datamining
 tic = time.time()
-dataset = data_mining("gefcom.csv")
+dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/gefcom.csv")
 toc = time.time()
 print(str(toc-tic) + ' sec Elapsed\n')
 print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
@@ -77,12 +77,10 @@ plt.show()
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
  
-plt.figure()
 plot_acf(residuals_plt, lags = range(0,51), alpha = None)
 plt.xlabel('Days')
 plt.show()
  
-plt.figure()
 plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
 plt.xlabel('Days')
 plt.show()
@@ -102,7 +100,7 @@ names = [str(i) for i in range(9)]
 calendar_var = pd.DataFrame(regressors, index = x_axis, columns = names)
 calendar_var_NAX = calendar_var[start_pos:val_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
-                        'log_demand': dataset.log_demand,
+                          'log_demand': dataset.log_demand,
                           'residuals': residuals,
                           'drybulb': dataset.drybulb,
                           'dewpnt': dataset.dewpnt})
@@ -139,19 +137,18 @@ set_seed(14)
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
-                    MAX_EPOCHS = MAX_EPOCHS, #
-                    STOPPATIENCE = STOPPATIENCE,
-
-                    LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS, #[3, 4, 5, 6]
-                    LIST_ACT_FUN =LIST_ACT_FUN, #['softmax', 'sigmoid']
-                    LIST_LEARN_RATE = LIST_LEARN_RATE, #[0.1, 0.01, 0.003, 0.001]
-                    LIST_BATCH_SIZE = LIST_BATCH_SIZE, # manca no batch, None non funziona
-                    LIST_REG_PARAM = LIST_REG_PARAM,
-                    VERBOSE= VERBOSE,
-                    VERBOSE_EARLY = VERBOSE_EARLY)
+#min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
+#                    MAX_EPOCHS = MAX_EPOCHS, #
+#                    STOPPATIENCE = STOPPATIENCE,
+#                    LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS, #[3, 4, 5, 6]
+#                    LIST_ACT_FUN =LIST_ACT_FUN, #['softmax', 'sigmoid']
+#                    LIST_LEARN_RATE = LIST_LEARN_RATE, #[0.1, 0.01, 0.003, 0.001]
+#                    LIST_BATCH_SIZE = LIST_BATCH_SIZE, # manca no batch, None non funziona
+#                    LIST_REG_PARAM = LIST_REG_PARAM,
+#                    VERBOSE= VERBOSE,
+#                    VERBOSE_EARLY = VERBOSE_EARLY)
 # %% STORED FOR EASY ACCESS
-all_RMSE = np.load("all_RMSE_1.npy")
+all_RMSE = np.load("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/all_RMSE_1.npy")
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [ LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -222,13 +219,13 @@ dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 # y_pred_NAX_l, y_pred_NAX_u = ConfidenceInterval(y_pred_NAX, sigma_NAX)
 
 from ConfidenceInterval_f import ConfidenceInterval
-y_pred_GLM_l, y_pred_GLM_u = ConfidenceInterval(y_GLM_val, sigma_GLM, 0.95)
+y_pred_GLM_l, y_pred_GLM_u = ConfidenceInterval(y_GLM_val, sigma_GLM, 0.95, M, m)
  
 # Prova backtest
 from backtest_f import backtest
 y_real = np.array(dataset.demand[end_pos:val_pos])
 confidence_levels = np.arange(0.9,1,0.01)
-backtested_levels = backtest(y_real, y_GLM_val, confidence_levels, sigma_GLM)
+backtested_levels = backtest(y_real, y_GLM_val, confidence_levels, sigma_GLM, M, m)
 print('backtest')
 print(backtested_levels)
 
@@ -262,9 +259,9 @@ residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 from rmse_f import rmse
 from mape_f import mape
 print('RMSE_GLM')
-print(rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test)))
+print(rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test,M,m)))
 print('MAPE_GLM')
-print(mape(dataset.demand[end_pos:test_pos],destd(y_GLM_test)))
+print(mape(dataset.demand[end_pos:test_pos],destd(y_GLM_test,M,m)))
 
 
 calendar_var_NAX = calendar_var[start_pos:test_pos]
@@ -284,9 +281,9 @@ from ARX_f import ARX
 y_ARX_test, sigma_ARX = ARX(dataset_NAX, start_date, end_date, test_date) #predicted values
 
 print('RMSE_ARX')
-print(rmse(dataset.demand[end_pos:val_pos],destd(y_ARX_test)))
+print(rmse(dataset.demand[end_pos:val_pos],destd(y_ARX_test,M,m)))
 print('MAPE_ARX')
-print(mape(dataset.demand[end_pos:test_pos],destd(y_ARX_test)))
+print(mape(dataset.demand[end_pos:test_pos],destd(y_ARX_test,M,m)))
 # %% pinball
 from pinball_f import pinball
 from backtest_f import backtest
@@ -294,9 +291,9 @@ from backtest_f import backtest
 y = np.array(dataset.demand[end_pos:test_pos])  # demand, non std_demand!!!!!
 y_ARX_test = np.array(y_ARX_test)
 
-pinball_values_GLM = pinball(y, y_GLM_test, sigma_GLM)   # y_pred = output of GLM (prediction of std(log_demand))
+pinball_values_GLM = pinball(y, y_GLM_test, sigma_GLM, M, m)   # y_pred = output of GLM (prediction of std(log_demand))
 #pinball_values_NAX = pinball(y, y_NAX_test, sigma_NAX)
-pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX)
+pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX, M, m)
 
 pinplot_GLM = pd.Series(pinball_values_GLM)
 #pinplot_NAX = pd.Series(pinball_values_NAX)
@@ -317,9 +314,9 @@ print(sigma_ARX)
 
 print('backtest')
 confidence_levels = np.arange(0.9,1,0.01)
-backtested_levels_GLM, LR_Unc_GLM, LR_Cov_GLM = backtest(y, y_GLM_test, confidence_levels, sigma_GLM)
+backtested_levels_GLM, LR_Unc_GLM, LR_Cov_GLM = backtest(y, y_GLM_test, confidence_levels, sigma_GLM, M, m)
 #backtested_levels_NAX, LR_Unc_NAX, LR_Cov_NAX = backtest(y, y_NAX_val, confidence_levels, sigma_NAX)
-backtested_levels_ARX, LR_Unc_ARX, LR_Cov_ARX = backtest(y, y_ARX_test, confidence_levels, sigma_ARX)
+backtested_levels_ARX, LR_Unc_ARX, LR_Cov_ARX = backtest(y, y_ARX_test, confidence_levels, sigma_ARX, M, m)
 
 print('LR_GLM')
 print(LR_Unc_GLM, LR_Cov_GLM)

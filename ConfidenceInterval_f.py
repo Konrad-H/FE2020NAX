@@ -1,8 +1,7 @@
-def ConfidenceInterval(mu, sigma, confidence_level):
+def ConfidenceInterval(mu, sigma, confidence_level, M, m):
 
     import numpy as np
     from scipy.stats import norm
-    from Run_NAX_Project import M, m
     from dest_f import destd
 
     alpha_l = (1-confidence_level)/2
