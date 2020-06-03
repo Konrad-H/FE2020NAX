@@ -149,7 +149,7 @@ VERBOSE_EARLY = 1
 #                    VERBOSE= VERBOSE,
 #                    VERBOSE_EARLY = VERBOSE_EARLY)
 # %% STORED FOR EASY ACCESS
-all_RMSE = np.load("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/all_RMSE_1.npy")
+all_RMSE = np.load("all_RMSE_1.npy")
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [ LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 

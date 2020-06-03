@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd 
 
 from tf_ts_functions import  plot_train_history, multivariate_data
-from NAX_functions import custom_loss, inverse_std
+from NAX_functions import y2var, custom_loss, inverse_std
 from tensorflow.keras.callbacks import EarlyStopping
 
 from NAX_f import prep_data, aggregate_data, NAX_model, demands
@@ -44,8 +44,8 @@ EPOCHS = 500#800
 REG_PARAM = 0.001
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
 LEARN_RATE = 0.01
-HIDDEN_NEURONS=3 #3
-LOSS_FUNCTION =  [custom_loss, 'mse'][1] #custom_loss #'mae', 'mse'
+HIDDEN_NEURONS= 3#3
+LOSS_FUNCTION =  [custom_loss, 'mse'][0] #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 STOPPATIENCE = 50
 
@@ -53,7 +53,7 @@ past_history = 2
 future_target = -1
 STEP = 1
 
-tf.random.set_seed(14)
+tf.random.set_seed(14.2)
 features,labels= prep_data(df_NAX,
                     START_SPLIT = START_SPLIT,
                     TRAIN_SPLIT = TRAIN_SPLIT,
@@ -92,20 +92,36 @@ history=model.fit(
 plot_train_history(history,"Loss of model")
 # %%
 y_pred =model.predict(x_val)
-START = TRAIN_SPLIT+past_history+future_target-1
+START = TRAIN_SPLIT+past_history+future_target
 demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START)
 
-plt.figure()
-demand_true.plot()
-demand_NAX.plot()
-demand_GLM.plot()
-plt.show()
 
+print()
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
 print('RMSE_GLM',rmse(demand_GLM, demand_true))
 print('RMSE_NAX',rmse(demand_NAX, demand_true))
 
-# min(np.square(y_pred[:,1]))
+
+plt.subplot(1, 2, 1)
+demand_true.plot()
+demand_NAX.plot()
+demand_GLM.plot()
+
+
+
+# %%
+from numpy import pi
+import tensorflow.keras.backend as k
+
+var = y2var(y_pred)
+# var = k.square(tf.gather(y_pred,[1],axis=1))
+# var = k.clip(var, strike, None)
+
+print("MIN_VAR", min(var))
+
+plt.subplot(1, 2, 2)
+plt.plot(var)
+plt.show()
 
 # %% 
