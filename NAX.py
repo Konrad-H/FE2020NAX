@@ -39,13 +39,13 @@ VAL_SPLIT = 1095+365
 BATCH_SIZE = 50 #None
 BUFFER_SIZE = 5
 
-EVALUATION_INTERVAL = 500
-EPOCHS = 500 #200
-REG_PARAM = 0.0001
+#EVALUATION_INTERVAL = 500
+EPOCHS = 500#800
+REG_PARAM = 0.001
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003
+LEARN_RATE = 0.01
 HIDDEN_NEURONS=3 #3
-LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
+LOSS_FUNCTION =  [custom_loss, 'mse'][1] #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
 STOPPATIENCE = 50
 
@@ -92,7 +92,7 @@ history=model.fit(
 plot_train_history(history,"Loss of model")
 # %%
 y_pred =model.predict(x_val)
-START = TRAIN_SPLIT+past_history+future_target
+START = TRAIN_SPLIT+past_history+future_target-1
 demand_true, demand_NAX, demand_GLM  = demands(y_pred,y_val, df_NAX,START)
 
 plt.figure()
@@ -106,4 +106,6 @@ def rmse(predictions, targets):
 print('RMSE_GLM',rmse(demand_GLM, demand_true))
 print('RMSE_NAX',rmse(demand_NAX, demand_true))
 
-# %%
+# min(np.square(y_pred[:,1]))
+
+# %% 

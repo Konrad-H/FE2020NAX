@@ -70,7 +70,7 @@ def find_hyperparam(df_NAX,
     LIST_LOSS_FUNCTION = [custom_loss, 'mse']
     LOSS_FUNCTION = LIST_LOSS_FUNCTION[0]
 
-    START = TRAIN_SPLIT+past_history+future_target
+    START = TRAIN_SPLIT+past_history+future_target-1
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
 
     L1,L2,L3,L4,L5=len(LIST_HIDDEN_NEURONS), len(LIST_ACT_FUN), len(LIST_LEARN_RATE), len(LIST_REG_PARAM), len(LIST_BATCH_SIZE)
@@ -102,7 +102,7 @@ def find_hyperparam(df_NAX,
                         if VERBOSE==1:
                             c +=1
                             print(c," / ",N_SCENARIOS)
-                            print(rmse(demand_NAX,demand_true),' --',hyper_parameters)
+                            
                             RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
                             
                             hyper_parameters = [ LIST_HIDDEN_NEURONS[n1],
@@ -110,6 +110,7 @@ def find_hyperparam(df_NAX,
                             LIST_LEARN_RATE[n3], 
                             LIST_REG_PARAM[n4],
                             LIST_BATCH_SIZE[n5]]
+                            print(rmse(demand_NAX,demand_true),' --',hyper_parameters)
                             # print(round(c/N_SCENARIOS,4)*100,'% )
                             
 
