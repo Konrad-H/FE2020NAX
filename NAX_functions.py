@@ -1,6 +1,6 @@
 # %%
 import tensorflow.keras.backend as k
-from numpy import pi
+from numpy import pi, sign
 import tensorflow as tf
 
 # %%
