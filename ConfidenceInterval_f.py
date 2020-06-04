@@ -2,7 +2,6 @@ def ConfidenceInterval(mu, sigma, confidence_level, M, m):
 
     import numpy as np
     from scipy.stats import norm
-    from dest_f import destd
 
     alpha_l = (1-confidence_level)/2
     alpha_u = 1-alpha_l

@@ -21,6 +21,7 @@ def multivariate_data(dataset, target, start_index, end_index, history_size,
   data = []
   labels = []
   history_size = history_size-1
+  target_size +=1
   start_index = start_index + history_size
   if end_index is None:
     end_index = len(dataset) - target_size
