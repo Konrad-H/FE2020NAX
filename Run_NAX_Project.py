@@ -159,11 +159,11 @@ min_RMSE = np.min(all_RMSE,axis=None)
 
 # %% Choose Hyperparameters
 
-HIDDEN_NEURONS=min_hyper_parameters[0] # ??
-ACT_FUN = min_hyper_parameters[1] # ??
-LEARN_RATE = min_hyper_parameters[2] # ??
-REG_PARAM = min_hyper_parameters[3] # ??
-BATCH_SIZE = min_hyper_parameters[4] # ??
+HIDDEN_NEURONS=5 #min_hyper_parameters[0] # ??
+ACT_FUN = 'softmax' #min_hyper_parameters[1] # ??
+LEARN_RATE = 0.003 #min_hyper_parameters[2] # ??
+REG_PARAM = 0.0001 #min_hyper_parameters[3] # ??
+BATCH_SIZE = 50 #min_hyper_parameters[4] # ??
 
 
 

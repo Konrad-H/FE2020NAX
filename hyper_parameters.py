@@ -108,4 +108,16 @@ print('\n Hyper parameters')
 print(hyper_parameters)
 print('RMSE_NAX',np.min(RMSE,axis=None))
 
+# it should be:
+# HIDDEN_NEURONS = 3
+# ACT_FUN = 'softmax'
+# LEARN_RATE = 0.003
+# REG_PARAM = 10^-4
+# BATCH_SIZE = 50
+
+# clip 0.008 FAILURE
+# clip 0.007 FAILURE (HIDDEN_NEURONS = 6, il resto giusto)
+# clip 0.0065 FAILURE (HIDDEN_NEURONS = 5, il resto giusto)
+# clip 0.006 FAILURE (HIDDEN_NEURONS = 5, REG_PARAM = 0.001, il resto giusto)
+
 # %%
