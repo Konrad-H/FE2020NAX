@@ -40,10 +40,10 @@ BATCH_SIZE = 50 #None
 BUFFER_SIZE = 5
 
 #EVALUATION_INTERVAL = 500
-EPOCHS = 500#800
+EPOCHS = 100#800
 REG_PARAM = 0.001
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.01
+LEARN_RATE = 0.001
 HIDDEN_NEURONS= 3#3
 LOSS_FUNCTION =  [custom_loss, 'mse'][0] #custom_loss #'mae', 'mse'
 OUTPUT_NEURONS= 2 #2
@@ -113,13 +113,14 @@ demand_GLM.plot()
 # %%
 from numpy import pi
 import tensorflow.keras.backend as k
+import tensorflow.keras.backend as k
 
 var = y2var(y_pred)
 # var = k.square(tf.gather(y_pred,[1],axis=1))
 # var = k.clip(var, strike, None)
 
-print("MIN_VAR", min(var))
-
+print("MIN_VAR", k.min(var))
+print("MAX_VAR", k.max(var))
 plt.subplot(1, 2, 2)
 plt.plot(var)
 plt.show()
