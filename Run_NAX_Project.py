@@ -114,11 +114,11 @@ from hyper_param_f import find_hyperparam
 MAX_EPOCHS = 500 #
 STOPPATIENCE = 50
 
-LIST_HIDDEN_NEURONS = [3, 4, 5, 6] #[3, 4, 5, 6]
 LIST_ACT_FUN = ['softmax', 'sigmoid'] #['softmax', 'sigmoid']
+LIST_HIDDEN_NEURONS = [3, 4, 5, 6] #[3, 4, 5, 6]
 LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001] #[0.1, 0.01, 0.003, 0.001]
-LIST_BATCH_SIZE = [50,5000] # manca no batch, None non funziona
 LIST_REG_PARAM = [0.001, 0.0001, 0]
+LIST_BATCH_SIZE = [50,5000] # manca no batch, None non funziona
 
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
