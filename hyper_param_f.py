@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd 
 
 
-from NAX_functions import custom_loss, inverse_std
+from NAX_functions import custom_loss
 from tensorflow.keras.callbacks import EarlyStopping
 
 from NAX_f import prep_data, aggregate_data, NAX_model, demands, rmse
@@ -28,12 +28,16 @@ LIST_REG_PARAM = [0.001, 0.0001, 0]
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
-past_history = 2
-future_target = -1
+past_history = 1
+future_target = 0
 STEP = 1
 
 VERBOSE = 1
 VERBOSE_EARLY = 1
+
+M = 13.204884856537774
+m = 12.414618162128821
+
 # %% DEF FUNCTION
 def find_hyperparam(df_NAX,
                     MAX_EPOCHS = MAX_EPOCHS, #
@@ -52,7 +56,8 @@ def find_hyperparam(df_NAX,
                     future_target = future_target,
                     STEP = STEP,
                     VERBOSE= VERBOSE,
-                    VERBOSE_EARLY = VERBOSE_EARLY):
+                    VERBOSE_EARLY = VERBOSE_EARLY,
+                    M = M, m = m):
 
 
     features,labels= prep_data(df_NAX,
@@ -64,13 +69,11 @@ def find_hyperparam(df_NAX,
                                     TRAIN_SPLIT = TRAIN_SPLIT,
                                     VAL_SPLIT = VAL_SPLIT,
                                     past_history = past_history,
-                                    future_target = future_target,
-                                    STEP = STEP)
+                                    future_target = future_target)
 
-    LIST_LOSS_FUNCTION = [custom_loss, 'mse']
-    LOSS_FUNCTION = LIST_LOSS_FUNCTION[0]
+    LOSS_FUNCTION = custom_loss
 
-    START = TRAIN_SPLIT+past_history+future_target-1
+    START = TRAIN_SPLIT+past_history+future_target-1 #TRAINSPLIT
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
 
     L1,L2,L3,L4,L5=len(LIST_HIDDEN_NEURONS), len(LIST_ACT_FUN), len(LIST_LEARN_RATE), len(LIST_REG_PARAM), len(LIST_BATCH_SIZE)
@@ -97,7 +100,7 @@ def find_hyperparam(df_NAX,
                                 ) #shuffle=True,
                         y_pred =model.predict(x_val)
                         
-                        demand_true, demand_NAX, _ = demands(y_pred,y_val, df_NAX,START)
+                        demand_true, demand_NAX, _ = demands(y_pred, y_val, df_NAX, START, M, m)
                         RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
                         if VERBOSE==1:
                             c +=1
