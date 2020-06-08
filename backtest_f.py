@@ -1,4 +1,4 @@
-def backtest(y_real, y_pred, confidence_levels, sigma):
+def backtest(y_real, y_pred, confidence_levels, sigma, M, m):
     import numpy as np
     from ConfidenceInterval_f import ConfidenceInterval
 
@@ -6,12 +6,12 @@ def backtest(y_real, y_pred, confidence_levels, sigma):
     N = len(y_real)
 
     for cl in range(len(confidence_levels)):
-        IC_l, IC_u = ConfidenceInterval(y_pred, sigma, confidence_levels[cl])
+        IC_l, IC_u = ConfidenceInterval(y_pred, sigma, confidence_levels[cl], M, m)
         backtested_levels[cl] = sum(((y_real>=IC_l) & (y_real<=IC_u)))
         if cl==5:
             exception_vec = [1]*len(y_real) - ((y_real>=IC_l) & (y_real<=IC_u))
     
-    # Unconditional Covaraage at 95% confidence level
+    # Unconditional Covarage at 95% confidence level
     backtested_95 = backtested_levels[5]
     exceptions = N - backtested_95
     alpha = 1-confidence_levels[5]
