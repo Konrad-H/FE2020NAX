@@ -45,7 +45,7 @@ INPUT_SHAPE = (2,10)
 STOPPATIENCE = 50
 
 # Parameters of Multivariate Data
-past_history = 2 #Number of time steps to predict
+past_history = 1 #Number of time steps to predict
 future_target = 0#How much to predict in advance
 
 

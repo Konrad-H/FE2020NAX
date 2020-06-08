@@ -20,8 +20,9 @@ toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
 # Summary of energy demand and weather variables
+print(dataset.head())
+print()
 print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
-a=b
  
 # %%
 # Graph representing demand over 2009 and 2010
@@ -31,7 +32,7 @@ end_date   = 2010
 start_pos = (start_date -2008)*365
 end_pos   = (end_date+1 -2008)*365
 
-dataset_plt=dataset[start_pos:end_pos+1]
+dataset_plt = dataset[start_pos:end_pos+1]
 
 # plot
 plt.figure()
@@ -44,15 +45,14 @@ plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_
             dataset_plt[dataset_plt.date=='2010-01-01'].index, dataset_plt[dataset_plt.date=='2010-04-01'].index,
             dataset_plt[dataset_plt.date=='2010-07-01'].index, dataset_plt[dataset_plt.date=='2010-10-01'].index,
             dataset_plt[dataset_plt.date=='2011-01-01'].index]),
-           ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
-           fontsize = 'small')
+            ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
+            fontsize='small')
 plt.ylabel('GWh')
 plt.show()
 
 # %% 
 # Numeric variables are standardized, mapping them in [0,1] 
 dataset = data_standardize(dataset)
-print(dataset)
 
 # Maximum and minimum values taken by log_demand are saved, as they are useful to go 
 # back from standardized values to demand values, using custom function destd
@@ -123,18 +123,19 @@ temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
 temp_data_NAX = temp_data[start_pos:val_pos]
 df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
-# %% KONRAD ex. 4
-# %% IMPORT HYPER PARAM FUNCTION AND LOAD CONSTANTS
+
+# %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
 from hyper_param_f import find_hyperparam
 
-MAX_EPOCHS = 500 #
+MAX_EPOCHS = 500
 STOPPATIENCE = 50
 
-LIST_HIDDEN_NEURONS = [3, 4, 5, 6] #[3, 4, 5, 6]
-LIST_ACT_FUN = ['softmax', 'sigmoid'] #['softmax', 'sigmoid']
-LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001] #[0.1, 0.01, 0.003, 0.001]
-LIST_BATCH_SIZE = [50,5000] # manca no batch, None non funziona
-LIST_REG_PARAM = [0.001, 0.0001, 0]
+# Possible values of hyper-parameters
+LIST_HIDDEN_NEURONS = [3, 4, 5, 6]      # number of neurons (hidden layer)
+LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
+LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
+LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
+LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
@@ -152,19 +153,19 @@ VERBOSE_EARLY = 1
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
-                   MAX_EPOCHS = MAX_EPOCHS, #
-                   STOPPATIENCE = STOPPATIENCE,
-                   LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS, #[3, 4, 5, 6]
-                   LIST_ACT_FUN =LIST_ACT_FUN, #['softmax', 'sigmoid']
-                   LIST_LEARN_RATE = LIST_LEARN_RATE, #[0.1, 0.01, 0.003, 0.001]
-                   LIST_BATCH_SIZE = LIST_BATCH_SIZE, # manca no batch, None non funziona
-                   LIST_REG_PARAM = LIST_REG_PARAM,
-                   VERBOSE= VERBOSE,
-                   VERBOSE_EARLY = VERBOSE_EARLY,
-                   M = M, m = m)
-print(min_hyper_parameters)
-print(min_RMSE)
+#min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
+#                   MAX_EPOCHS = MAX_EPOCHS,
+#                   STOPPATIENCE = STOPPATIENCE,
+#                   LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+#                   LIST_ACT_FUN = LIST_ACT_FUN,
+#                   LIST_LEARN_RATE = LIST_LEARN_RATE,
+#                   LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+#                   LIST_REG_PARAM = LIST_REG_PARAM,
+#                   VERBOSE = VERBOSE,
+#                   VERBOSE_EARLY = VERBOSE_EARLY,
+#                   M = M, m = m)
+#print(min_hyper_parameters)
+#print(min_RMSE)
 
 # %% STORED FOR EASY ACCESS
 #all_RMSE = np.load("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/all_RMSE_1.npy")
@@ -258,14 +259,11 @@ sigma_NAX = np.clip(sigma_NAX, np.sqrt(0.001), None)
 weigths = model.layers[1].get_weights()
 
 # %% Confidence interval
-print('ci si prova')
-print(min(sigma_NAX))
-print(max(sigma_NAX))
 
 y_NAX_test = y_GLM_test[1:] + mu_NAX
 
 # Confidence Interval at confidence level 95% 
-from ConfidenceInterval_f import ConfidenceInterval
+from evaluation_functions import ConfidenceInterval
 y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
 
 # Plot 95% Confidence Interval
@@ -291,6 +289,7 @@ plt.show()
 
 from GLM_and_ARX_models import ARX
 from standard_and_error_functions import rmse, mape
+from evaluation_functions import pinball, backtest
 
 for i in range(5):
 
@@ -341,8 +340,8 @@ for i in range(5):
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
                         LOSS_FUNCTION = MLE_loss,
-                        OUT_KERNEL = kernel,
-                        OUT_BIAS = bias
+                        OUT_KERNEL = Constant(kernel),
+                        OUT_BIAS = Constant(bias)
                         )
     plot_train_history(history,"Loss of model")
     
@@ -355,7 +354,6 @@ for i in range(5):
     y_NAX_test = y_GLM_test[1:] + mu_NAX
 
     # 95% Confidence Interval Plot
-    from ConfidenceInterval_f import ConfidenceInterval
     y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
 
     x_axis = range(end_pos+1, test_pos)
@@ -391,9 +389,6 @@ for i in range(5):
 
 
     # Pinball Loss computed for the three models
-    from pinball_f import pinball
-    from backtest_f import backtest
-
     y = np.array(dataset.demand[end_pos:test_pos])
     y_ARX_test = np.array(y_ARX_test)
     
@@ -415,7 +410,7 @@ for i in range(5):
     plt.ylabel('Pinball Loss [GWh]')
     plt.show()
 
-
+    
     # Backtest
     from backtest_f import backtest
 
@@ -448,3 +443,7 @@ for i in range(5):
     plt.xlabel('Nominal Level')
     plt.ylabel('Backtested Level')
     plt.show()
+
+    a=b
+
+# %%
