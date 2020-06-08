@@ -15,12 +15,13 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("gefcom.csv")
+dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/gefcom.csv")
 toc = time.time()
-print(str(toc-tic) + ' sec Elapsed\n')
+# print(str(toc-tic) + ' sec Elapsed\n')
 
 # Summary of energy demand and weather variables
 print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
+a=b
  
 # %%
 # Graph representing demand over 2009 and 2010

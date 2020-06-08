@@ -10,6 +10,7 @@ def regressor(df):
     #
     # INPUT:
     # df:           Dataframe containing the needed variables to build the regressors
+    #
     # OUTPUT:
     # regressors:   Regressors matrix for GLM
   
