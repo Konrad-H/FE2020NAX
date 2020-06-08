@@ -47,6 +47,8 @@ def find_hyperparam(df_NAX,
 
                     M = M, m = m):
     
+    # This function selects the optimal hyper-parameters (corresponding to the minimum RMSE)
+    #
     # INPUTS:
     # df_NAX
     # previously defined parameters
@@ -113,6 +115,7 @@ def find_hyperparam(df_NAX,
                         # consider realised demand and compute demand in original units from the NAX prediction
                         demand_true, demand_NAX, _ = demands(y_pred, y_val, df_NAX, START, M, m)
 
+                        # compute RMSE
                         RMSE[n1][n2][n3][n4][n5] = rmse(demand_NAX, demand_true)
 
                         # print progress of the loop
