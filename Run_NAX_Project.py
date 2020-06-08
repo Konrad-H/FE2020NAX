@@ -1,35 +1,41 @@
-# %% Import useful packages
+# To add a new cell, type '# %%'
+
+# %% 
+# Import useful built-in packages
 import pandas as pd 
 import numpy as np
 import os
 import sys
-from data_mining_f import data_mining, data_standardize
-from regressor_f import regressor
 from tensorflow.random import set_seed
-from GLM_f import GLM
 import time
-from dest_f import destd 
 import matplotlib.pyplot as plt
 
+# %% 
+# Dataset extraction and datamining
+from data_mining_f import data_mining, data_standardize
 
-# %% Dataset extraction and datamining
 tic = time.time()
-dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/gefcom.csv")
+dataset = data_mining("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
 toc = time.time()
-# print(str(toc-tic) + ' sec Elapsed\n')
-dataset[['demand', 'drybulb', 'dewpnt']].describe()
+print(str(toc-tic) + ' sec Elapsed\n')
 
-
-# %% Plot cumulated power consumption between January 2009 and December 2010
+# Summary of energy demand and weather variables
+print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
+ 
+# %%
+# Graph representing demand over 2009 and 2010
+# Sundays are highlighted by blue marker
 start_date = 2009 
 end_date   = 2010
 start_pos = (start_date -2008)*365
 end_pos   = (end_date+1 -2008)*365
 
-dataset_plt = dataset[start_pos:end_pos+1]
+dataset_plt=dataset[start_pos:end_pos+1]
+
+# plot
 plt.figure()
-plt.plot(dataset_plt.demand.index, dataset_plt.demand, color='red', linewidth=0.5, label='Consumption')
-plt.plot(dataset_plt.demand[dataset_plt.day_of_week=='Sun'].index, dataset_plt.demand[dataset_plt.day_of_week=='Sun'].values, 
+plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, color='red', linewidth=0.5, label='Consumption')
+plt.plot(dataset_plt.demand[dataset_plt.day_of_week=='Sun'].index, dataset_plt.demand[dataset_plt.day_of_week=='Sun'].values/1000, 
         linestyle='', color='blue', marker='.', markersize=5, label='Sundays')
 plt.legend()
 plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_plt[dataset_plt.date=='2009-04-01'].index, 
@@ -39,69 +45,67 @@ plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_
             dataset_plt[dataset_plt.date=='2011-01-01'].index]),
            ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
            fontsize = 'small')
-y_loc, _ = plt.yticks()
-plt.yticks(y_loc, ['', '300', '350', '400', '450', '500'])
 plt.ylabel('GWh')
 plt.show()
 
-
 # %% 
+# Numeric variables are standardized, mapping them in [0,1] 
 dataset = data_standardize(dataset)
+print(dataset)
 
+# Maximum and minimum values taken by log_demand are saved, as they are useful to go 
+# back from standardized values to demand values, using custom function destd
+from standard_and_error_functions import destd
 M = max(dataset.log_demand)
 m = min(dataset.log_demand)
 
+# %% 
+# GLM Model
+from GLM_and_ARX_models import regressor, GLM
 
-# %% GLM Model
 # define regressors
-
 regressors = regressor(dataset)
 
 # GLM on 2008-2010 time window
-start_date = 2009
-end_date   = 2011
-val_date   = 2012
+start_date = 2008
+end_date   = 2010
+val_date   = 2011
 start_pos = (start_date -2008)*365
 end_pos   = (end_date+1 -2008)*365
 val_pos   = (val_date+1 -2008)*365
-y_GLM_val, y_GLM_train, sigma = GLM(dataset, regressors, start_date, end_date, val_date) #predicted values
+y_GLM_val, y_GLM_train, sigma = GLM(dataset, regressors, start_date, end_date, val_date) # predicted values
 y_GLM = np.concatenate([y_GLM_train,y_GLM_val])
-residuals = dataset.std_demand[start_pos:val_pos] - y_GLM
-
+residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 
 # %%
-# PLOT GLM
+# GLM plot on train test - uncomment to plot it
 
-x_axis = range(start_pos, end_pos)
-demand_plt = pd.Series(dataset.demand[start_pos:end_pos],index=x_axis)
-demand_pred = destd(y_GLM_train,M,m)
-demand_pred_plt = pd.Series(demand_pred,index=x_axis)
+#x_axis = range(start_pos, end_pos)
+#demand_pred = destd(y_GLM_train,M,m)
 
-plt.figure()
-demand_plt.plot()
-demand_pred_plt.plot()
+#demand_plt = pd.Series(dataset.demand[start_pos:end_pos],index=x_axis)
+#demand_pred_plt = pd.Series(demand_pred,index=x_axis)
+
+#plt.figure()
+#demand_plt.plot()
+#demand_pred_plt.plot()
 #plt.show()
-
 
 # %%
 # Plot autocorrelation and partial autocorrelation of the residuals
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
 residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
- 
+
+# Autocorrelation
 plot_acf(residuals_plt, lags = range(0,51), alpha = None)
 plt.xlabel('Days')
-#plt.show()
- 
+plt.show()
+
+# Partial Autocorrelation
 plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
 plt.xlabel('Days')
-#plt.show()
-
-# %%
-
-from rmse_f import rmse
-print('RMSE_GLM')
-print(rmse(dataset.demand[end_pos:val_pos],destd(y_GLM_val,M,m)))
-
+plt.show()
 
 # %% NAX Model
 # Needed data stored in a DataFrame
@@ -208,7 +212,7 @@ dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 # %%
 from NAX_f import one_NAX_iteration
 from tf_ts_functions import  plot_train_history
-MAX_EPOCHS = 600 
+MAX_EPOCHS = 500 
 STOPPATIENCE = 100
 VERBOSE=1
 VERBOSE_EARLY = 1
@@ -242,9 +246,11 @@ print(max(sigma_NAX))
 
 y_NAX_test = y_GLM_test[1:] + mu_NAX
 
+# Confidence Interval at confidence level 95% 
 from ConfidenceInterval_f import ConfidenceInterval
 y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
 
+# Plot 95% Confidence Interval
 x_axis = range(end_pos+1, test_pos)
 lower_bound = pd.Series(y_NAX_l, index=x_axis)
 upper_bound = pd.Series(y_NAX_u, index=x_axis)
@@ -260,38 +266,38 @@ plt.plot(x_axis, estimated_values, color='r', linewidth=0.8)
 plt.fill_between(x_axis, lower_bound, upper_bound, facecolor='coral', interpolate=True)
 plt.show()
 
+# %%
+# Comparison of GLM, NAX and ARX models, through pinball and backtest techniques, and errors MAPE and RMSE
+# We calibrate four times the model over a 3 years time window, and test it on the fourth year
+# Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
-# %% ex. 6
+from GLM_and_ARX_models import ARX
+from standard_and_error_functions import rmse, mape
 
-for i in range(4):
-    start_date = 2010+i
-    end_date   = 2012+i
-    test_date  = 2013+i
+for i in range(5):
 
-    
-    #attacco tutto il pezzo che ora scrivo fuori dal for solo per 2010 - 2012 - 2013
-
-
-    #start_date = 2009
-    #end_date   = 2011
-    #test_date  = 2012
+    # train and test sets are defined
+    start_date = 2009+i
+    end_date   = 2011+i
+    test_date  = 2012+i
     start_pos = (start_date -2008)*365
     end_pos   = (end_date+1 -2008)*365
     test_pos  = (test_date+1 -2008)*365
+    
+
+    # GLM calibration
     y_GLM_test, y_GLM_train, sigma_GLM = GLM(dataset, regressors, start_date, end_date, test_date) #predicted values
     y_GLM = np.concatenate([y_GLM_train, y_GLM_test])
     
     residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 
-
-    from rmse_f import rmse
-    from mape_f import mape
+    # GLM errors
     print('RMSE_GLM')
     print(rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m)))
     print('MAPE_GLM')
     print(mape(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m)))
 
-
+    # Dataset for NAX model is prepared
     calendar_var_NAX = calendar_var[start_pos:test_pos]
     temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
                                 'residuals': residuals,
@@ -300,6 +306,8 @@ for i in range(4):
     temp_data_NAX = temp_data[start_pos:test_pos]
     dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
+
+    # NAX model is calibrated
     MAX_EPOCHS = 500 
     STOPPATIENCE = 50
     VERBOSE=0
@@ -315,14 +323,16 @@ for i in range(4):
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY)
     plot_train_history(history,"Loss of model")
-
+    
     mu_NAX = y_pred[:,0]
     sigma_NAX = y_pred[:,1]
+    # Sigma_NAX vector is adjusted
     sigma_NAX = abs(sigma_NAX)
     sigma_NAX = np.clip(sigma_NAX, np.sqrt(0.001), None)
 
     y_NAX_test = y_GLM_test[1:] + mu_NAX
 
+    # 95% Confidence Interval Plot
     from ConfidenceInterval_f import ConfidenceInterval
     y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
 
@@ -341,29 +351,31 @@ for i in range(4):
     plt.fill_between(x_axis, lower_bound, upper_bound, facecolor='coral', interpolate=True)
     plt.show()
 
+    # NAX Errors
     print('RMSE_NAX')
     print(rmse(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
     print('MAPE_NAX')
     print(mape(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
 
-    # %% ARX Model
-    from ARX_f import ARX
 
+    # ARX Model is calibrated
     y_ARX_test, sigma_ARX = ARX(dataset_NAX, start_date, end_date, test_date)
-
+    
+    # ARX Errors
     print('RMSE_ARX')
     print(rmse(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m)))
     print('MAPE_ARX')
     print(mape(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m)))
 
-    # %% pinball
+
+    # Pinball Loss computed for the three models
     from pinball_f import pinball
     from backtest_f import backtest
 
-    y = np.array(dataset.demand[end_pos:test_pos])  # demand, non std_demand!!!!!
+    y = np.array(dataset.demand[end_pos:test_pos])
     y_ARX_test = np.array(y_ARX_test)
-
-    pinball_values_GLM = pinball(y, y_GLM_test, sigma_GLM, M, m)   # y_pred = output of GLM (prediction of std(log_demand))
+    
+    pinball_values_GLM = pinball(y, y_GLM_test, sigma_GLM, M, m)
     pinball_values_NAX = pinball(y[1:], y_NAX_test, sigma_NAX, M, m)
     pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX, M, m)
 
@@ -371,16 +383,18 @@ for i in range(4):
     pinplot_NAX = pd.Series(pinball_values_NAX)
     pinplot_ARX = pd.Series(pinball_values_ARX)
 
+    # Pinball Loss Graph
     plt.figure()
-    plt.plot(pinplot_GLM.index, pinplot_GLM.values, linestyle='dashed', color='red', label='GLM')
-    plt.plot(pinplot_NAX.index, pinplot_NAX.values, color='black', label='NAX')
-    plt.plot(pinplot_ARX.index, pinplot_ARX.values, linestyle='dotted', color='blue', label='ARX')
+    plt.plot(pinplot_GLM.index/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
+    plt.plot(pinplot_NAX.index/100, pinplot_NAX.values/1000, color='black', label='NAX')
+    plt.plot(pinplot_ARX.index/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
     plt.legend()
     plt.xlabel('Quantile')
-    plt.ylabel('Pinball Loss')
+    plt.ylabel('Pinball Loss [GWh]')
     plt.show()
 
-    # %% backtest
+
+    # Backtest
     from backtest_f import backtest
 
     print('backtest')
@@ -389,6 +403,7 @@ for i in range(4):
     backtested_levels_NAX, LR_Unc_NAX, LR_Cov_NAX = backtest(y[1:], y_NAX_test, confidence_levels, sigma_NAX, M, m)
     backtested_levels_ARX, LR_Unc_ARX, LR_Cov_ARX = backtest(y, y_ARX_test, confidence_levels, sigma_ARX, M, m)
 
+    # Likelihood Ratios of Conditional and Unconditional Covarage Test 
     print('LR_GLM')
     print(LR_Unc_GLM, LR_Cov_GLM)
     print('LR_NAX')
@@ -401,6 +416,7 @@ for i in range(4):
     backplot_ARX = pd.Series(backtested_levels_ARX)
     confplot     = pd.Series(confidence_levels)
 
+    # Backtested Levels Graph
     plt.figure()
     plt.plot(confplot.values, backplot_GLM.values, linestyle='dashed', color='red', label='GLM')
     plt.plot(confplot.values, backplot_NAX.values, color='black', label='NAX')
@@ -410,7 +426,3 @@ for i in range(4):
     plt.xlabel('Nominal Level')
     plt.ylabel('Backtested Level')
     plt.show()
-    a=b
-    
-
-    # %%
