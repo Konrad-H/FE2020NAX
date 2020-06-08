@@ -4,25 +4,23 @@ from numpy import pi
 from tensorflow import gather
 
 # %% MLE loss function
-# THe loss function is clipped because the logarithm gives issues when near 0
+# THe loss function is clipped because the logarithm gives issues when near to 0
 # custom_loss is a standard version
-# loss strike gives the chance to alter the strike of the clip.
+# loss_strike gives the chance to alter the strike of the clip.
 
 def custom_loss(y_true, y_pred):
-    # Calculates the MLS function to be max(min)
-    # output: vector of loss
-    # input:    y_true = Nx1 vector of true values (residuals)
-    #           y_pred = Nx2 array of pred values, first col mu, second colum std dv
-
+    # Calculates the negative log-likelihood function to be minimized
+    # 
+    # INPUT:  y_true = Nx1 vector of true values (residuals)
+    #         y_pred = Nx2 array of pred values, first col. mu, second col. std dv
+    # 
+    # OUTPUT: vector of loss
 
     strike= .008
     true = gather(y_true,[0],axis=1)
     mean = gather(y_pred,[0],axis=1)
     var = k.square(gather(y_pred,[1],axis=1))
     var = k.clip(var, strike, None)
-    # THe loss function is clipped because the logarithm gives issues when near 0
-    # custom_loss is a standard version
-    # loss strike gives the chance to alter the strike of the clip.
 
     log_L = k.log(2*pi*var)/2+k.square(mean-true)/(2*var)
     
