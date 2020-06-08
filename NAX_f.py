@@ -1,8 +1,6 @@
 # To add a new cell, type '# %%'
 # To add a new markdown cell, type '# %% [markdown]'
 # %%
-#import key packageskeras.utils.plot_model(model, "my_first_model.png")
-
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -11,46 +9,61 @@ import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd 
+from pandas import Series
 
-from tf_ts_functions import  plot_train_history, multivariate_data
-from NAX_functions import custom_loss
+from MLE_loss import custom_loss
 from tensorflow.keras.callbacks import EarlyStopping
 from dest_f import destd
 
-mpl.rcParams['figure.figsize'] = (8, 6)
-mpl.rcParams['axes.grid'] = False
+# %% USED PARAMETERS IN THE CODE
 
+# How to split the data
+START_SPLIT = 0 #FIRST LINE
+TRAIN_SPLIT = 1095 #SPLIT LINE
+END_SPLIT = 1095+365 #LAST LINE 
 
-# %%
-START_SPLIT = 0
-TRAIN_SPLIT = 1095
-VAL_SPLIT = 1095+365
+# BATCH SIZE to be used in the training
 BATCH_SIZE = 50 #None
-BUFFER_SIZE = 5
 
-EVALUATION_INTERVAL = 500
+# NUMBER OF EPOCHS for the training
 EPOCHS = 50 #200
-REG_PARAM = 0.0001
+
+# PARAMETERS OF THE MODEL
+REG_PARAM = 0.0001 #L1 normalization parameter
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003
-HIDDEN_NEURONS=3 #3
-LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
-OUTPUT_NEURONS= 2 #2
+LEARN_RATE = 0.003 #learn rate of ADAM function
+HIDDEN_NEURONS=3 #as written
+LOSS_FUNCTION =  custom_loss #as written
+OUTPUT_NEURONS= 2 #as written
+OUT_KERNEL = 'glorot_uniform' # weights for the Kernel Init
+OUT_BIAS = 'zeros' # weights for the BIAS Init
+
+# Shape of the input of the model, 2 time steps, 10 features
 INPUT_SHAPE = (2,10)
+
+# How many iterations before keras callbacks stops the function
 STOPPATIENCE = 50
 
-past_history = 2
-future_target = 0
-STEP = 1
-# opt=tf.keras.optimizers.RMSprop()
+# Parameters of Multivariate Data
+past_history = 2 #Number of time steps to predict
+future_target = 0#How much to predict in advance
+
 
 # %%
 
 def prep_data(df, START_SPLIT = 0,
                     TRAIN_SPLIT = 1095,
-                    VAL_SPLIT = 1095+365,
+                    END_SPLIT = 1095+365,
                     DAYS_NOT_STD = False):
+
+    # takes a df and outputs the needed features for our model
+    # inputs:
+    #   df is a pandas dataframe with the features and labels
+    #   DAYS_NOT_STD is a boolean if days aren't standard. False by default
+    # outputs:
+    #   dataset: numpy array with the features of our dataset
+    #   labels: numpy array with labels of out dataset
+
     features_considered = ['drybulb','dewpnt']
 
     for i in range(1,9):
@@ -75,20 +88,50 @@ def prep_data(df, START_SPLIT = 0,
 
 
 # %%
+def multivariate_data(features, target, start_index, end_index, history_size,
+                      target_size, single_step = False):
+  data = []
+  labels = []
+  start_index = start_index + history_size
+  if end_index is None:
+    end_index = len(features) - target_size
+
+  for i in range(start_index, end_index):
+    indices = range(i-history_size, i+1)
+    data.append(features[indices])
+
+    if single_step:
+      labels.append(target[i]) # era i+target_size
+    else:
+      labels.append(target[i:i+target_size])
+
+  return np.array(data), np.array(labels)
+
+  # %%
+
 
 def aggregate_data(features, labels,
             START_SPLIT = 0,
             TRAIN_SPLIT = 1095,
-            VAL_SPLIT = 1095+365,
+            END_SPLIT = 1095+365,
             past_history = 1,
             future_target = 0):
+    # Uses multivariate data to aggregate the data form features and labels
+    # in couples in the structure (x(t-1),x(t)) (y(t))
 
+    #inputs
+    #   features, labels output from prep_data
+    #   others previously explained
+    #outputs
+    #   x's tensor of dim ?,past_history, length(features), 
+    #   y's tensor of dim ?,1, length(labels), 
+    # where ? is the dim of Train or validation respectively
     x_train, y_train = multivariate_data(features, labels, START_SPLIT,
                                                     TRAIN_SPLIT, past_history,
                                                     future_target,
                                                     single_step=True)
     x_val, y_val = multivariate_data(features, labels,
-                                                TRAIN_SPLIT, VAL_SPLIT, past_history,
+                                                TRAIN_SPLIT, END_SPLIT, past_history,
                                                 future_target,
                                                 single_step=True)
     #print ('Single window of past history : {}'.format(x_train[0].shape))
@@ -103,7 +146,10 @@ def NAX_model(INPUT_SHAPE=(2,10),
             LEARN_RATE = 0.003,
             HIDDEN_NEURONS = 3 ,
             OUTPUT_NEURONS = 2,
-            LOSS_FUNCTION = custom_loss):
+            LOSS_FUNCTION = custom_loss,
+            OUT_KERNEL = 'glorot_uniform',
+            OUT_BIAS = 'zeros'):
+    # Using the parameters previously defined returns a simple RNN model
 
     act_reg = tf.keras.regularizers.l1(REG_PARAM)
     opt = tf.keras.optimizers.Adam(learning_rate=LEARN_RATE)
@@ -117,17 +163,11 @@ def NAX_model(INPUT_SHAPE=(2,10),
                                         kernel_initializer=tf.keras.initializers.he_normal(),
                                         bias_initializer=tf.keras.initializers.he_uniform()))
     
-    kernel = np.array([[ 0.4, -0.2],
-                       [-0.8, -0.1],
-                       [ 0.5, -0.2]])
-    #kernel = np.array([[ 0.44, -0.15],
-    #                   [-0.81, -0.06],
-    #                   [ 0.46, -0.16]])
-    bias = np.array([0.2, 0.1])
-    #bias = np.array([0.22, 0.11])                                   
+                              
     model.add(tf.keras.layers.Dense(OUTPUT_NEURONS,
-              kernel_initializer=tf.keras.initializers.Constant(kernel),
-              bias_initializer=tf.keras.initializers.Constant(bias)))
+              kernel_initializer=OUT_KERNEL,
+              bias_initializer=OUT_BIAS
+              ))
     
     # opt = tf.keras.optimizers.RMSprop()
     model.compile(optimizer=opt, loss=LOSS_FUNCTION)
@@ -137,11 +177,20 @@ def NAX_model(INPUT_SHAPE=(2,10),
 
 def demands(y_pred, y_val, df, START, M, m): #df_NAX solo 4 anni
     N_val = len(y_pred)
-    
-    std_demand_true = pd.Series(df['std_demand'][START:START+N_val])
+    # calculates the demands in original units from the standard predictions
+    # inputs
+    #   y_pred: 2-dim array with predictions and 'raw' std dev (needs y2var)
+    #   y_val : 1-dim array with true values
+    #   df    : original dataframe used
+    #   START : First predicted position in df
+    # outputs
+    #   demand_true: true original demand
+    #   demand_NAX: NAX predicited demand
+    #   demand_GLM: GLM predicted demand
+    std_demand_true = Series(df['std_demand'][START:START+N_val])
     std_demand_GLM = (std_demand_true- y_val)
     std_demand_NAX = std_demand_GLM+y_pred[:,0]
-    #demand_log_train= pd.Series(df['log_demand']) 
+    #demand_log_train= Series(df['log_demand']) 
 
     demand_true = destd(std_demand_true, M, m)
     demand_NAX = destd(std_demand_NAX, M, m)
@@ -150,6 +199,7 @@ def demands(y_pred, y_val, df, START, M, m): #df_NAX solo 4 anni
 
 
 def rmse(predictions, targets):
+    #calculated the RMSe from prediction and targets.
     return np.sqrt(((predictions - targets) ** 2).mean())
 
 
@@ -159,12 +209,32 @@ from NAX_f import prep_data, aggregate_data, NAX_model, demands
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
+def plot_train_history(history, title):
+    # plots the val and train loss across epochs
+    # inputs:
+    #   history: output from model.fit
+    #   title: name of plot
+
+  loss = history.history['loss']
+  val_loss = history.history['val_loss']
+
+  epochs = range(len(loss))
+
+  plt.figure()
+
+  plt.plot(epochs, loss, 'b', label='Training loss')
+  plt.plot(epochs, val_loss, 'r', label='Validation loss')
+  plt.title(title)
+  plt.legend()
+
+  plt.show()
+
 
 # %%
 
 def one_NAX_iteration(df,START_SPLIT = 0,
                 TRAIN_SPLIT = 1095,
-                VAL_SPLIT = 1095+365,
+                END_SPLIT = 1095+365,
                 BATCH_SIZE = 50,
                 EPOCHS = 500,
                 REG_PARAM = 0.0001,
@@ -177,17 +247,23 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 past_history = 1,
                 future_target = 0,
                 VERBOSE = 1,
-                VERBOSE_EARLY = 1):
-
+                VERBOSE_EARLY = 1,
+                OUT_KERNEL = 'glorot_uniform',
+                OUT_BIAS = 'zeros'):
+    # takes the previously defined parameters and returns a prediction and it's model
+    # outputs
+    #    y_pred: predictions of the model for the test set
+    #   history: all the information stored in the model fitting
+    #   model: the model which we trained
     features, labels = prep_data(df,
                         START_SPLIT = START_SPLIT,
                         TRAIN_SPLIT = TRAIN_SPLIT,
-                        VAL_SPLIT = VAL_SPLIT, DAYS_NOT_STD=True)
+                        END_SPLIT = END_SPLIT, DAYS_NOT_STD=True)
     
     x_train, y_train,x_val, y_val = aggregate_data(features,labels,
                                     START_SPLIT = START_SPLIT,
                                     TRAIN_SPLIT = TRAIN_SPLIT,
-                                    VAL_SPLIT = VAL_SPLIT,
+                                    END_SPLIT = END_SPLIT,
                                     past_history = past_history,
                                     future_target = future_target)
 
@@ -199,7 +275,9 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 LEARN_RATE = LEARN_RATE,
                 HIDDEN_NEURONS = HIDDEN_NEURONS ,
                 OUTPUT_NEURONS = OUTPUT_NEURONS,
-                LOSS_FUNCTION =  LOSS_FUNCTION)
+                LOSS_FUNCTION =  LOSS_FUNCTION,
+                OUT_KERNEL = OUT_KERNEL,
+                OUT_BIAS = OUT_BIAS )
 
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
     history=model.fit(

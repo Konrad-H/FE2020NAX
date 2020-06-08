@@ -2,19 +2,17 @@
 import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-import tensorflow as tf
-
 import numpy as np
-import pandas as pd 
 
-
-from NAX_functions import custom_loss
+from MLE_loss import loss_strike
 from tensorflow.keras.callbacks import EarlyStopping
 
 from NAX_f import prep_data, aggregate_data, NAX_model, demands, rmse
 
 
 # %% load dataset
+
+my_loss = loss_strike(.008)
 
 MAX_EPOCHS = 500 #
 STOPPATIENCE = 50
@@ -27,7 +25,7 @@ LIST_REG_PARAM = [0.001, 0.0001, 0]
 
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
-VAL_SPLIT = 1095+365
+END_SPLIT = 1095+365
 past_history = 1
 future_target = 0
 STEP = 1
@@ -51,7 +49,7 @@ def find_hyperparam(df_NAX,
 
                     START_SPLIT = START_SPLIT,
                     TRAIN_SPLIT = TRAIN_SPLIT,
-                    VAL_SPLIT = VAL_SPLIT,
+                    END_SPLIT = END_SPLIT,
                     past_history = past_history,
                     future_target = future_target,
                     STEP = STEP,
@@ -63,15 +61,15 @@ def find_hyperparam(df_NAX,
     features,labels= prep_data(df_NAX,
                         START_SPLIT = START_SPLIT,
                         TRAIN_SPLIT = TRAIN_SPLIT,
-                        VAL_SPLIT = VAL_SPLIT)
+                        END_SPLIT = END_SPLIT)
     x_train, y_train,x_val, y_val = aggregate_data(features,labels,
                                     START_SPLIT = START_SPLIT,
                                     TRAIN_SPLIT = TRAIN_SPLIT,
-                                    VAL_SPLIT = VAL_SPLIT,
+                                    END_SPLIT = END_SPLIT,
                                     past_history = past_history,
                                     future_target = future_target)
 
-    LOSS_FUNCTION = custom_loss
+    LOSS_FUNCTION = 'mse'#my_loss
 
     START = TRAIN_SPLIT+past_history+future_target-1 #TRAINSPLIT
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
@@ -103,16 +101,16 @@ def find_hyperparam(df_NAX,
                         demand_true, demand_NAX, _ = demands(y_pred, y_val, df_NAX, START, M, m)
                         RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
                         if VERBOSE==1:
-                            c +=1
-                            print(c," / ",N_SCENARIOS)
                             
                             RMSE[n1][n2][n3][n4][n5]=rmse(demand_NAX,demand_true)
-                            
                             hyper_parameters = [ LIST_HIDDEN_NEURONS[n1],
                             LIST_ACT_FUN[n2], 
                             LIST_LEARN_RATE[n3], 
                             LIST_REG_PARAM[n4],
                             LIST_BATCH_SIZE[n5]]
+
+                            c +=1
+                            print(c," / ",N_SCENARIOS)
                             print(rmse(demand_NAX,demand_true),' --',hyper_parameters)
                             # print(round(c/N_SCENARIOS,4)*100,'% )
                             

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 # %% Dataset extraction and datamining
 tic = time.time()
-dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/gefcom.csv")
+dataset = data_mining("gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 dataset[['demand', 'drybulb', 'dewpnt']].describe()
@@ -140,26 +140,26 @@ VERBOSE_EARLY = 1
 
 # %%
 
-# BEST COMBINATIOS
+# BEST COMBINATIONS
 # 3.65 %  -- [3, 'softmax', 0.01, 0.001, 50]
 # 7752.083425213432
 # 4.17 %  -- [3, 'softmax', 0.01, 0.001, 5000]
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-#min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
-#                    MAX_EPOCHS = MAX_EPOCHS, #
-#                    STOPPATIENCE = STOPPATIENCE,
-#                    LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS, #[3, 4, 5, 6]
-#                    LIST_ACT_FUN =LIST_ACT_FUN, #['softmax', 'sigmoid']
-#                    LIST_LEARN_RATE = LIST_LEARN_RATE, #[0.1, 0.01, 0.003, 0.001]
-#                    LIST_BATCH_SIZE = LIST_BATCH_SIZE, # manca no batch, None non funziona
-#                    LIST_REG_PARAM = LIST_REG_PARAM,
-#                    VERBOSE= VERBOSE,
-#                    VERBOSE_EARLY = VERBOSE_EARLY,
-#                    M = M, m = m)
-#print(min_hyper_parameters)
-#print(min_RMSE)
+min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
+                   MAX_EPOCHS = MAX_EPOCHS, #
+                   STOPPATIENCE = STOPPATIENCE,
+                   LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS, #[3, 4, 5, 6]
+                   LIST_ACT_FUN =LIST_ACT_FUN, #['softmax', 'sigmoid']
+                   LIST_LEARN_RATE = LIST_LEARN_RATE, #[0.1, 0.01, 0.003, 0.001]
+                   LIST_BATCH_SIZE = LIST_BATCH_SIZE, # manca no batch, None non funziona
+                   LIST_REG_PARAM = LIST_REG_PARAM,
+                   VERBOSE= VERBOSE,
+                   VERBOSE_EARLY = VERBOSE_EARLY,
+                   M = M, m = m)
+print(min_hyper_parameters)
+print(min_RMSE)
 
 # %% STORED FOR EASY ACCESS
 #all_RMSE = np.load("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/all_RMSE_1.npy")
@@ -206,8 +206,21 @@ dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 
 # %%
-from NAX_f import one_NAX_iteration
-from tf_ts_functions import  plot_train_history
+from NAX_f import one_NAX_iteration, plot_train_history
+from MLE_loss import loss_strike
+from tensorflow.keras.initializers import Constant
+# Loss function used after hyperparam found
+MLE_loss, y2var = loss_strike(.001)
+
+kernel = np.array([[ 0.4, -0.2],
+                [-0.8, -0.1],
+                [ 0.5, -0.2]])
+#kernel = np.array([[ 0.44, -0.15],
+#                   [-0.81, -0.06],
+#                   [ 0.46, -0.16]])
+bias = np.array([0.2, 0.1])
+#bias = np.array([0.22, 0.11])     
+
 MAX_EPOCHS = 600 
 STOPPATIENCE = 100
 VERBOSE=1
@@ -224,7 +237,11 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     HIDDEN_NEURONS=HIDDEN_NEURONS ,
                     STOPPATIENCE = STOPPATIENCE,
                     VERBOSE= VERBOSE,
-                    VERBOSE_EARLY = VERBOSE_EARLY)
+                    VERBOSE_EARLY = VERBOSE_EARLY,
+                    OUT_KERNEL = Constant(kernel),
+                    OUT_BIAS = Constant(bias),
+                    LOSS_FUNCTION = MLE_loss
+                    )
 plot_train_history(history,"Loss of model")
 
 mu_NAX = y_pred[:,0]
@@ -313,7 +330,11 @@ for i in range(4):
                         HIDDEN_NEURONS=HIDDEN_NEURONS ,
                         STOPPATIENCE = STOPPATIENCE,
                         VERBOSE= VERBOSE,
-                        VERBOSE_EARLY = VERBOSE_EARLY)
+                        VERBOSE_EARLY = VERBOSE_EARLY,
+                        LOSS_FUNCTION = MLE_loss,
+                        OUT_KERNEL = kernel,
+                        OUT_BIAS = bias
+                        )
     plot_train_history(history,"Loss of model")
 
     mu_NAX = y_pred[:,0]
@@ -410,7 +431,6 @@ for i in range(4):
     plt.xlabel('Nominal Level')
     plt.ylabel('Backtested Level')
     plt.show()
-    a=b
     
 
     # %%
