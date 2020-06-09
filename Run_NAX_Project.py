@@ -126,9 +126,13 @@ df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 # %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
 from hyper_param_f import find_hyperparam
+from MLE_loss import loss_strike
 
 MAX_EPOCHS = 500
 STOPPATIENCE = 50
+
+strike = 0.003
+my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
 LIST_HIDDEN_NEURONS = [3, 4, 5, 6]      # number of neurons (hidden layer)
@@ -153,40 +157,45 @@ VERBOSE_EARLY = 1
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-#min_hyper_parameters, min_RMSE, all_RMSE = find_hyperparam(df_NAX,
-#                   MAX_EPOCHS = MAX_EPOCHS,
-#                   STOPPATIENCE = STOPPATIENCE,
-#                   LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-#                   LIST_ACT_FUN = LIST_ACT_FUN,
-#                   LIST_LEARN_RATE = LIST_LEARN_RATE,
-#                   LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-#                   LIST_REG_PARAM = LIST_REG_PARAM,
-#                   VERBOSE = VERBOSE,
-#                   VERBOSE_EARLY = VERBOSE_EARLY,
-#                   M = M, m = m)
-#print(min_hyper_parameters)
-#print(min_RMSE)
+seed = 14
+set_seed(seed)
+min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
+                                                           LOSS_FUNCTION = my_loss,
+                                                           MAX_EPOCHS = MAX_EPOCHS,
+                                                           STOPPATIENCE = STOPPATIENCE,
+                                                           LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                                           LIST_ACT_FUN = LIST_ACT_FUN,
+                                                           LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                                           LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                                           LIST_REG_PARAM = LIST_REG_PARAM,
+                                                           VERBOSE = VERBOSE,
+                                                           VERBOSE_EARLY = VERBOSE_EARLY)
+print(min_hyper_parameters)
+print(min_RMSE)
+
+# %% 
+name = 'RMSE'+str(seed)+'.'+str(strike)+'.npy'
+array = np.array([all_RMSE, grid_history])
+np.save(name, array)
 
 # %% STORED FOR EASY ACCESS
 #all_RMSE = np.load("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/all_RMSE_1.npy")
-#argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
-#min_hyper_parameters = [ LIST_HIDDEN_NEURONS[argmin[0]],
-#                        LIST_ACT_FUN[argmin[1]], 
-#                        LIST_LEARN_RATE[argmin[2]], 
-#                        LIST_REG_PARAM[argmin[3]],
-#                        LIST_BATCH_SIZE[argmin[4]] ]
-#min_RMSE = np.min(all_RMSE,axis=None)
+argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
+min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
+                        LIST_ACT_FUN[argmin[1]], 
+                        LIST_LEARN_RATE[argmin[2]], 
+                        LIST_REG_PARAM[argmin[3]],
+                        LIST_BATCH_SIZE[argmin[4]]]
+min_RMSE = np.min(all_RMSE,axis=None)
 
 # %% Choose Hyperparameters
 
-HIDDEN_NEURONS = 3 #min_hyper_parameters[0] # ??
-ACT_FUN = 'softmax' #min_hyper_parameters[1] # ??
-LEARN_RATE = 0.003 #min_hyper_parameters[2] # ??
-REG_PARAM = 1e-4 #min_hyper_parameters[3] # ??
-BATCH_SIZE = 50 #min_hyper_parameters[4] # ??
+HIDDEN_NEURONS = min_hyper_parameters[0] # ??
+ACT_FUN = min_hyper_parameters[1] # ??
+LEARN_RATE = min_hyper_parameters[2] # ??
+REG_PARAM = min_hyper_parameters[3] # ??
+BATCH_SIZE = min_hyper_parameters[4] # ??
 
-
-# %
 
 # HYPER PARAMETERS READY
 # %% ex. 5
@@ -213,10 +222,10 @@ dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 # %%
 from NAX_f import one_NAX_iteration, plot_train_history
-from MLE_loss import loss_strike
 from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
-MLE_loss, y2var = loss_strike(.001)
+strike = 0.001
+MLE_loss, y2var = loss_strike(strike)
 
 kernel = np.array([[ 0.4, -0.2],
                 [-0.8, -0.1],
@@ -251,10 +260,7 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
 plot_train_history(history,"Loss of model")
 
 mu_NAX = y_pred[:,0]
-sigma_NAX = y_pred[:,1]
-
-sigma_NAX = abs(sigma_NAX)
-sigma_NAX = np.clip(sigma_NAX, np.sqrt(0.001), None)
+sigma_NAX = np.sqrt(y2var(y_pred))
 
 weigths = model.layers[1].get_weights()
 
@@ -327,8 +333,8 @@ for i in range(5):
     # NAX model is calibrated
     MAX_EPOCHS = 500 
     STOPPATIENCE = 50
-    VERBOSE=0
-    VERBOSE_EARLY=1
+    VERBOSE = 0
+    VERBOSE_EARLY = 1
     y_pred,history,model = one_NAX_iteration(dataset_NAX,
                         BATCH_SIZE = BATCH_SIZE,
                         EPOCHS = MAX_EPOCHS,
@@ -346,10 +352,7 @@ for i in range(5):
     plot_train_history(history,"Loss of model")
     
     mu_NAX = y_pred[:,0]
-    sigma_NAX = y_pred[:,1]
-    # Sigma_NAX vector is adjusted
-    sigma_NAX = abs(sigma_NAX)
-    sigma_NAX = np.clip(sigma_NAX, np.sqrt(0.001), None)
+    sigma_NAX = np.sqrt(y2var(y_pred))
 
     y_NAX_test = y_GLM_test[1:] + mu_NAX
 

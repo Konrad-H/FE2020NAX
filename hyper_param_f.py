@@ -12,6 +12,13 @@ my_loss = loss_strike(.005)     # custom loss function
 MAX_EPOCHS = 500    # number of epochs for the training
 STOPPATIENCE = 50   # number of iterations before Keras callback stops the function
 
+# Possible values of hyper-parameters
+LIST_HIDDEN_NEURONS = [3, 4, 5, 6]      # number of neurons (hidden layer)
+LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
+LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
+LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
+LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
+
 # How to split the data
 START_SPLIT = 0     # first row of the training set
 TRAIN_SPLIT = 1095  # last row of the training set
@@ -24,8 +31,9 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # %%
-def find_hyperparam(df_NAX,
+def find_hyperparam(df_NAX, M, m,
 
+                    LOSS_FUNCTION = my_loss,
                     MAX_EPOCHS = MAX_EPOCHS,
                     STOPPATIENCE = STOPPATIENCE,
 
@@ -33,7 +41,7 @@ def find_hyperparam(df_NAX,
                     LIST_ACT_FUN = LIST_ACT_FUN,
                     LIST_LEARN_RATE = LIST_LEARN_RATE,
                     LIST_REG_PARAM = LIST_REG_PARAM,
-                    LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                    LIST_BATCH_SIZE = LIST_REG_PARAM,
                     
                     START_SPLIT = START_SPLIT,
                     TRAIN_SPLIT = TRAIN_SPLIT,
@@ -43,9 +51,7 @@ def find_hyperparam(df_NAX,
                     future_target = future_target,
                     
                     VERBOSE = VERBOSE,
-                    VERBOSE_EARLY = VERBOSE_EARLY,
-
-                    M = M, m = m):
+                    VERBOSE_EARLY = VERBOSE_EARLY):
     
     # This function selects the optimal hyper-parameters (corresponding to the minimum RMSE)
     #
@@ -64,6 +70,7 @@ def find_hyperparam(df_NAX,
     # hyper_parameters: selected hyper-parameters
     # min_RMSE:         minimum RMSE, corresponding to the selected hyper-parameters
     # RMSE:             RMSE corresponding to all possible combinations of hyper-parameters
+    # grid_history:     last element of the validation loss of each possible combinations of hyper-parameters
 
     # get the needed features and the corresponding labels
     features, labels = prep_data(df_NAX,
@@ -79,8 +86,6 @@ def find_hyperparam(df_NAX,
                                      past_history = past_history,
                                      future_target = future_target)
 
-    LOSS_FUNCTION = my_loss
-
     START = TRAIN_SPLIT + past_history + future_target - 1
     # early stopping criterium
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
@@ -90,6 +95,7 @@ def find_hyperparam(df_NAX,
     N_SCENARIOS = L1*L2*L3*L4*L5
 
     RMSE = np.zeros((L1,L2,L3,L4,L5))
+    grid_history = np.zeros((L1,L2,L3,L4,L5))
     c = 0
     for n1 in range(L1):
         for n2 in range(L2):
@@ -105,10 +111,10 @@ def find_hyperparam(df_NAX,
                                           HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[n1],
                                           LOSS_FUNCTION = LOSS_FUNCTION)
                         # train the model
-                        model.fit(x = x_train, y = y_train, 
-                                  batch_size = LIST_BATCH_SIZE[n5], epochs=MAX_EPOCHS, 
-                                  verbose = 0, callbacks = [EARLYSTOP], 
-                                  validation_data = (x_val, y_val), validation_batch_size = LIST_BATCH_SIZE[n5])
+                        history = model.fit(x = x_train, y = y_train, 
+                                            batch_size = LIST_BATCH_SIZE[n5], epochs = MAX_EPOCHS, 
+                                            verbose = 0, callbacks = [EARLYSTOP], 
+                                            validation_data = (x_val, y_val), validation_batch_size = LIST_BATCH_SIZE[n5])
                         # predict output corresponding to input x_val
                         y_pred = model.predict(x_val)
                         
@@ -131,7 +137,8 @@ def find_hyperparam(df_NAX,
                             print(c, " / ", N_SCENARIOS)
                             print(rmse(demand_NAX,demand_true), ' --', hyper_parameters)
                             # print(round(c/N_SCENARIOS,4)*100,'%)
-                            
+
+                        grid_history[n1][n2][n3][n4][n5] = history.history['val_loss'][-1]                   
 
     # select the optimal hyper-parameters (corresponding to the minimum RMSE)
     argmin = np.unravel_index(np.argmin(RMSE,axis=None),RMSE.shape)
@@ -144,4 +151,4 @@ def find_hyperparam(df_NAX,
     # select the minimum RMSE
     min_RMSE = np.min(RMSE,axis=None)
 
-    return hyper_parameters, min_RMSE, RMSE
+    return hyper_parameters, min_RMSE, RMSE, grid_history
