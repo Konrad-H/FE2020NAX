@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/gefcom.csv")
+dataset = data_mining("gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -131,7 +131,7 @@ from MLE_loss import loss_strike
 MAX_EPOCHS = 500
 STOPPATIENCE = 50
 
-strike = 0.003
+strike = 0.001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
