@@ -157,29 +157,30 @@ VERBOSE_EARLY = 1
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-seed = 14
-set_seed(seed)
-min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
-                                                           LOSS_FUNCTION = my_loss,
-                                                           MAX_EPOCHS = MAX_EPOCHS,
-                                                           STOPPATIENCE = STOPPATIENCE,
-                                                           LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-                                                           LIST_ACT_FUN = LIST_ACT_FUN,
-                                                           LIST_LEARN_RATE = LIST_LEARN_RATE,
-                                                           LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-                                                           LIST_REG_PARAM = LIST_REG_PARAM,
-                                                           VERBOSE = VERBOSE,
-                                                           VERBOSE_EARLY = VERBOSE_EARLY)
-print(min_hyper_parameters)
-print(min_RMSE)
+# seed = 14
+# set_seed(seed)
+# min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
+#                                                            LOSS_FUNCTION = my_loss,
+#                                                            MAX_EPOCHS = MAX_EPOCHS,
+#                                                            STOPPATIENCE = STOPPATIENCE,
+#                                                            LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+#                                                            LIST_ACT_FUN = LIST_ACT_FUN,
+#                                                            LIST_LEARN_RATE = LIST_LEARN_RATE,
+#                                                            LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+#                                                            LIST_REG_PARAM = LIST_REG_PARAM,
+#                                                            VERBOSE = VERBOSE,
+#                                                            VERBOSE_EARLY = VERBOSE_EARLY)
+# print(min_hyper_parameters)
+# print(min_RMSE)
 
-# %% 
-name = 'RMSE'+str(seed)+'.'+str(strike)+'.npy'
-array = np.array([all_RMSE, grid_history])
-np.save(name, array)
+# # %% 
+# name = 'RMSE'+str(seed)+'.'+str(strike)+'.npy'
+# array = np.array([all_RMSE, grid_history])
+# np.save(name, array)
 
 # %% STORED FOR EASY ACCESS
-#all_RMSE = np.load("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/all_RMSE_1.npy")
+data = np.load("Results/RMSE.14.0.0001.npy")
+all_RMSE = data[0]
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -200,9 +201,9 @@ BATCH_SIZE = min_hyper_parameters[4] # ??
 # HYPER PARAMETERS READY
 # %% ex. 5
 #
-start_date = 2009
-end_date   = 2011
-test_date  = 2012
+start_date = 2008
+end_date   = start_date+2
+test_date  = start_date+3
 start_pos = (start_date -2008)*365
 end_pos   = (end_date+1 -2008)*365
 test_pos  = (test_date+1 -2008)*365
@@ -225,16 +226,8 @@ from NAX_f import one_NAX_iteration, plot_train_history
 from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
 strike = 0.001
+set_seed(5)
 MLE_loss, y2var = loss_strike(strike)
-
-kernel = np.array([[ 0.4, -0.2],
-                [-0.8, -0.1],
-                [ 0.5, -0.2]])
-#kernel = np.array([[ 0.44, -0.15],
-#                   [-0.81, -0.06],
-#                   [ 0.46, -0.16]])
-bias = np.array([0.2, 0.1])
-#bias = np.array([0.22, 0.11])     
 
 MAX_EPOCHS = 600 
 STOPPATIENCE = 100
@@ -242,7 +235,7 @@ VERBOSE=1
 VERBOSE_EARLY = 1
 
 # SEED
-set_seed(5)
+
 y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     BATCH_SIZE = BATCH_SIZE,
                     EPOCHS = MAX_EPOCHS,
@@ -253,23 +246,32 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     STOPPATIENCE = STOPPATIENCE,
                     VERBOSE= VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
-                    OUT_KERNEL = Constant(kernel),
-                    OUT_BIAS = Constant(bias),
                     LOSS_FUNCTION = MLE_loss
                     )
 plot_train_history(history,"Loss of model")
 
 mu_NAX = y_pred[:,0]
 sigma_NAX = np.sqrt(y2var(y_pred))
+sigma_NAX = sigma_NAX[:,0]
 
-weigths = model.layers[1].get_weights()
+hid_weights = model.layers[0].get_weights()
+hid_kernel = hid_weights[0]
+hid_bias = hid_weights[1]
+
+out_weights = model.layers[1].get_weights()
+out_kernel = out_weights[0]
+out_bias = out_weights[1]
 
 # %% Confidence interval
-
+from evaluation_functions import ConfidenceInterval
+from standard_and_error_functions import rmse, mape
 y_NAX_test = y_GLM_test[1:] + mu_NAX
 
+print('RMSE_NAX')
+print(rmse(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
+    
 # Confidence Interval at confidence level 95% 
-from evaluation_functions import ConfidenceInterval
+
 y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
 
 # Plot 95% Confidence Interval
@@ -294,9 +296,9 @@ plt.show()
 # Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
 from GLM_and_ARX_models import ARX
-from standard_and_error_functions import rmse, mape
-from evaluation_functions import pinball, backtest
 
+from evaluation_functions import pinball, backtest
+set_seed(14)
 for i in range(5):
 
     # train and test sets are defined
@@ -346,14 +348,24 @@ for i in range(5):
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
                         LOSS_FUNCTION = MLE_loss,
-                        OUT_KERNEL = Constant(kernel),
-                        OUT_BIAS = Constant(bias)
+                        OUT_KERNEL = Constant(out_kernel),
+                        OUT_BIAS = Constant(out_bias),
+                        HID_KERNEL = Constant(hid_kernel)
+                        # HID_BIAS = Constant(hid_bias)
                         )
+
+    hid_weights = model.layers[0].get_weights()
+    hid_kernel = hid_weights[0]
+    hid_bias = hid_weights[1]
+
+    out_weights = model.layers[1].get_weights()
+    out_kernel = out_weights[0]
+    out_bias = out_weights[1]
     plot_train_history(history,"Loss of model")
     
     mu_NAX = y_pred[:,0]
     sigma_NAX = np.sqrt(y2var(y_pred))
-
+    sigma_NAX = sigma_NAX[:,0]
     y_NAX_test = y_GLM_test[1:] + mu_NAX
 
     # 95% Confidence Interval Plot
@@ -446,7 +458,5 @@ for i in range(5):
     plt.xlabel('Nominal Level')
     plt.ylabel('Backtested Level')
     plt.show()
-
-    a=b
 
 # %%

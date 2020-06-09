@@ -155,7 +155,10 @@ def NAX_model(INPUT_SHAPE=(2,10),
             OUTPUT_NEURONS = 2,
             LOSS_FUNCTION = custom_loss,
             OUT_KERNEL = 'glorot_uniform',
-            OUT_BIAS = 'zeros'):
+            OUT_BIAS = 'zeros',
+            HID_KERNEL = 'glorot_uniform',
+            HID_BIAS = 'zeros'
+            ):
     
     # Using the parameters previously defined returns the NAX model,
     # composed by a simple RNN layer and a Dense layer as output
@@ -169,9 +172,9 @@ def NAX_model(INPUT_SHAPE=(2,10),
                                         input_shape = INPUT_SHAPE,
                                         activation = ACT_FUN,
                                         activity_regularizer = act_reg,
-                                        kernel_initializer=tf.keras.initializers.he_normal(),
-                                        bias_initializer=tf.keras.initializers.he_uniform()))
-    
+                                        kernel_initializer=HID_KERNEL,
+                                        bias_initializer=HID_BIAS
+                                        ))
                               
     model.add(tf.keras.layers.Dense(OUTPUT_NEURONS,
               kernel_initializer=OUT_KERNEL,
@@ -250,7 +253,9 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 VERBOSE = 1,
                 VERBOSE_EARLY = 1,
                 OUT_KERNEL = 'glorot_uniform',
-                OUT_BIAS = 'zeros'):
+                OUT_BIAS = 'zeros',
+                HID_KERNEL = 'glorot_uniform',
+                HID_BIAS = 'zeros',):
     
     # Takes the previously defined hyperparameters, implement the NAX model
     # and returns the prediction on the validation set and the fitted model
@@ -283,7 +288,10 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 OUTPUT_NEURONS = OUTPUT_NEURONS,
                 LOSS_FUNCTION =  LOSS_FUNCTION,
                 OUT_KERNEL = OUT_KERNEL,
-                OUT_BIAS = OUT_BIAS )
+                OUT_BIAS = OUT_BIAS,
+                HID_KERNEL = HID_KERNEL,
+                HID_BIAS = HID_BIAS
+                )
 
     # EarlyStopping callbacks option is defined
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
