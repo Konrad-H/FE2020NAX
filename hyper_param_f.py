@@ -51,7 +51,11 @@ def find_hyperparam(df_NAX, M, m,
                     future_target = future_target,
                     
                     VERBOSE = VERBOSE,
-                    VERBOSE_EARLY = VERBOSE_EARLY):
+                    VERBOSE_EARLY = VERBOSE_EARLY,
+                    OUT_KERNEL = 'glorot_uniform',
+                    OUT_BIAS = 'zeros',
+                    HID_KERNEL = 'glorot_uniform',
+                    HID_BIAS = 'zeros'):
     
     # This function selects the optimal hyper-parameters (corresponding to the minimum RMSE)
     #
@@ -105,11 +109,15 @@ def find_hyperparam(df_NAX, M, m,
                         # for every possible combination of hyper-parameters
                         # build a simpleRNN model
                         model = NAX_model(INPUT_SHAPE = x_train.shape[-2:],
-                                          REG_PARAM = LIST_REG_PARAM[n4],
-                                          ACT_FUN = LIST_ACT_FUN[n2],
-                                          LEARN_RATE = LIST_LEARN_RATE[n3],
-                                          HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[n1],
-                                          LOSS_FUNCTION = LOSS_FUNCTION)
+                                            REG_PARAM = LIST_REG_PARAM[n4],
+                                            ACT_FUN = LIST_ACT_FUN[n2],
+                                            LEARN_RATE = LIST_LEARN_RATE[n3],
+                                            HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[n1],
+                                            LOSS_FUNCTION = LOSS_FUNCTION,
+                                            OUT_KERNEL = OUT_KERNEL,
+                                            OUT_BIAS = OUT_BIAS,
+                                            HID_KERNEL = HID_KERNEL,
+                                            HID_BIAS = HID_BIAS)
                         # train the model
                         history = model.fit(x = x_train, y = y_train, 
                                             batch_size = LIST_BATCH_SIZE[n5], epochs = MAX_EPOCHS, 
