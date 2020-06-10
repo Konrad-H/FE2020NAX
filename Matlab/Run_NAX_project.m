@@ -3,7 +3,7 @@ clc
 
 %% Dataset extraction and datamining
 tic
-dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/FE2020NAX/gefcom.csv");
+dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/gefcom.csv");
 toc
 
 % Dataset description
@@ -26,7 +26,7 @@ for i = 1:length(dates_to_plot)
     plot_pos(i) = find(dataset_plt.dates == dates_to_plot(i));
 end
 
-figure(1)
+figure
 plot([start_pos:end_pos], dataset_plt.demand/1000, 'r', ...
       start_pos-1+sundays_pos, dataset_plt.demand(sundays_pos)/1000, 'b.', 'MarkerSize', 8);
 xlim([start_pos-30, end_pos+30])
@@ -64,7 +64,7 @@ residuals = dataset.std_demand(start_pos+1:val_pos) - y_GLM;
 % GLM plot
 demand_pred = destd(y_GLM_train, M, m);
 
-figure(2)
+figure
 plot([start_pos+1: end_pos], dataset.demand(start_pos+1:end_pos)/1000)
 hold on
 plot([start_pos+1: end_pos], demand_pred/1000)
@@ -74,13 +74,13 @@ grid on
 % Plot autocorrelation and partial autocorrelation of the residuals
 residuals_plt = dataset.std_demand(start_pos+1:end_pos) - y_GLM_train;
 
-figure(3)
+figure
 autocorr(residuals_plt, 'NumLags', 50);
 xlabel('Days')
 xlim([-2, 52])
 ylim([-0.2, 1.2])
 
-figure(4)
+figure
 parcorr(residuals_plt, 'NumLags', 50);
 xlabel('Days')
 xlim([-2, 52])
@@ -224,7 +224,7 @@ ylim([-0.4, 1.2])
 % 
 % 
 % ex. 6
-
+%% FOR
 for i = [0:4]
     start_date = 2009+i;
     end_date   = 2011+i;
@@ -234,16 +234,14 @@ for i = [0:4]
     end_pos   = (end_date+1 - 2008)*365;
     test_pos   = (test_date+1 - 2008)*365;
     
-    regressors = regressor(dataset);
     [y_GLM_test, y_GLM_train, sigma_GLM] = GLM(dataset, regressors, start_date, end_date, test_date); % predicted values on validation set and train set
                                                                                                       % and standard deviation of the fitted model
     y_GLM = [y_GLM_train; y_GLM_test];
     residuals = dataset.demand(start_pos+1:test_pos) - y_GLM;
-
-    disp('RMSE_GLM')
-    rmse(dataset.demand(end_pos+1:test_pos), destd(y_GLM_test, M, m))
-    disp('MAPE_GLM')
-    mape(dataset.demand(end_pos+1:test_pos), destd(y_GLM_test, M, m))
+    
+    y = dataset.demand(end_pos+1:test_pos);
+    RMSE_GLM = rmse(y, destd(y_GLM_test, M, m))
+    MAPE_GLM = mape(y, destd(y_GLM_test, M, m))
     
     calendar_var_NAX = array2table(regressors);
     dataset_NAX = calendar_var_NAX(start_pos+1:test_pos, :);
@@ -305,66 +303,58 @@ for i = [0:4]
 %     print(rmse(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
 %     print('MAPE_NAX')
 %     print(mape(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
-% 
-    % ARX Model
-    y_ARX_test, sigma_ARX = ARX(dataset_NAX, start_date, end_date, test_date);
+ 
 
-    disp('RMSE_ARX')
-    rmse(dataset.demand(end_pos+1:test_pos), destd(y_ARX_test, M, m))
-    disp('MAPE_ARX')
-    mape(dataset.demand(end_pos+1:test_pos), destd(y_ARX_test, M, m))
+    % ARX Model
+    [y_ARX_test, sigma_ARX] = ARX(dataset_NAX, start_date, end_date, test_date);
     
-    break
-% 
-%     # %% pinball
-%     from pinball_f import pinball
-%     from backtest_f import backtest
-% 
-%     y = np.array(dataset.demand[end_pos:test_pos])  # demand, non std_demand!!!!!
-%     y_ARX_test = np.array(y_ARX_test)
-% 
-%     pinball_values_GLM = pinball(y, y_GLM_test, sigma_GLM, M, m)   # y_pred = output of GLM (prediction of std(log_demand))
-%     pinball_values_NAX = pinball(y[1:], y_NAX_test, sigma_NAX, M, m)
-%     pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX, M, m)
-% 
-%     pinplot_GLM = pd.Series(pinball_values_GLM)
-%     pinplot_NAX = pd.Series(pinball_values_NAX)
-%     pinplot_ARX = pd.Series(pinball_values_ARX)
-% 
-%     # pinball graph
-%     plt.figure()
-%     pinplot_GLM.plot()
-%     pinplot_NAX.plot()
-%     pinplot_ARX.plot()
-%     plt.show()
-% 
-%     # %% backtest
-%     from backtest_f import backtest
-% 
-% 
-%     print('backtest')
-%     confidence_levels = np.arange(0.9,1,0.01)
-%     backtested_levels_GLM, LR_Unc_GLM, LR_Cov_GLM = backtest(y, y_GLM_test, confidence_levels, sigma_GLM, M, m)
-%     backtested_levels_NAX, LR_Unc_NAX, LR_Cov_NAX = backtest(y[1:], y_NAX_test, confidence_levels, sigma_NAX, M, m)
-%     backtested_levels_ARX, LR_Unc_ARX, LR_Cov_ARX = backtest(y, y_ARX_test, confidence_levels, sigma_ARX, M, m)
-% 
-%     print('LR_GLM')
-%     print(LR_Unc_GLM, LR_Cov_GLM)
-%     print('LR_NAX')
-%     print(LR_Unc_NAX, LR_Cov_NAX)
-%     print('LR_ARX')
-%     print(LR_Unc_ARX, LR_Cov_ARX)
-% 
-%     backplot_GLM = pd.Series(backtested_levels_GLM)
-%     backplot_NAX = pd.Series(backtested_levels_NAX)
-%     backplot_ARX = pd.Series(backtested_levels_ARX)
-%     confplot     = pd.Series(confidence_levels)
-% 
-%     plt.figure()
-%     backplot_GLM.plot()
-%     backplot_NAX.plot()
-%     backplot_ARX.plot()
-%     confplot.plot()
-%     plt.show()
+    RMSE_ARX = rmse(y, destd(y_ARX_test, M, m))
+    MAPE_ARX = mape(y, destd(y_ARX_test, M, m))
+   
+    figure()
+    plot(y)
+    hold on
+    plot(destd(y_ARX_test, M, m))
+    
+    
+    % Pinball Loss
+    pinball_values_GLM = pinball(y, y_GLM_test, sigma_GLM, M, m);   % y_pred = output of GLM (prediction of std(log_demand))
+    % pinball_values_NAX = pinball(y[1:], y_NAX_test, sigma_NAX, M, m)
+    pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX, M, m);
+
+    % Pinball Loss Graph
+    figure
+	plot([1:length(pinball_values_GLM)]/100, pinball_values_GLM/1000, 'r--', ...
+         [1:length(pinball_values_ARX)]/100, pinball_values_ARX/1000, 'b:')
+    legend('GLM', 'ARX', 'Location', 'NorthEast')
+    xlabel('Quantile')
+    ylabel('Pinball Loss [GWh]')
+    
+    
+    % Backtest
+    confidence_levels = [0.9:0.01:1];
+    [backtested_levels_GLM, LR_Unc_GLM, LR_Cov_GLM] = backtest(y, y_GLM_test, confidence_levels, sigma_GLM, M, m);
+    % backtested_levels_NAX, LR_Unc_NAX, LR_Cov_NAX = backtest(y[1:], y_NAX_test, confidence_levels, sigma_NAX, M, m)
+    [backtested_levels_ARX, LR_Unc_ARX, LR_Cov_ARX] = backtest(y, y_ARX_test, confidence_levels, sigma_ARX, M, m);
+ 
+    disp('LR_GLM')
+    LR_Unc_GLM
+    LR_Cov_GLM
+    % disp('LR_NAX')
+    % LR_Unc_NAX
+    % LR_Cov_NAX
+    disp('LR_ARX')
+    LR_Unc_ARX
+    LR_Cov_ARX
+
+    figure
+    plot(confidence_levels, backtested_levels_GLM, 'r--', ...
+         confidence_levels, backtested_levels_ARX, 'b:', ...
+         confidence_levels, confidence_levels, 'c.', 'MarkerSize', 8)
+    legend('GLM', 'ARX', 'Nominal Level', 'Location', 'NorthWest')
+	xlabel('Nominal Level \alpha')
+    ylabel('Backtested Level')
+    xlim([0.895 1.005])
+    
 end
 
