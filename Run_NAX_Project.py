@@ -131,7 +131,7 @@ from MLE_loss import loss_strike
 MAX_EPOCHS = 500
 STOPPATIENCE = 50
 
-strike = 0.001
+strike = 0.0001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
@@ -157,8 +157,8 @@ VERBOSE_EARLY = 1
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-# seed = 14
-# set_seed(seed)
+seed = 14
+set_seed(seed)
 # min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
 #                                                            LOSS_FUNCTION = my_loss,
 #                                                            MAX_EPOCHS = MAX_EPOCHS,
@@ -173,13 +173,12 @@ VERBOSE_EARLY = 1
 # print(min_hyper_parameters)
 # print(min_RMSE)
 
-# # %% 
-# name = 'RMSE'+str(seed)+'.'+str(strike)+'.npy'
+# %% SAVE (or load) results 
+
+name = 'Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
 # array = np.array([all_RMSE, grid_history])
 # np.save(name, array)
-
-# %% STORED FOR EASY ACCESS
-data = np.load("Results/RMSE.14.0.0001.npy")
+data = np.load(name)
 all_RMSE = data[0]
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
@@ -225,8 +224,8 @@ dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 from NAX_f import one_NAX_iteration, plot_train_history
 from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
-strike = 0.001
-set_seed(5)
+
+set_seed(seed)
 MLE_loss, y2var = loss_strike(strike)
 
 MAX_EPOCHS = 600 
@@ -265,14 +264,18 @@ out_bias = out_weights[1]
 # %% Confidence interval
 from evaluation_functions import ConfidenceInterval
 from standard_and_error_functions import rmse, mape
-y_NAX_test = y_GLM_test[1:] + mu_NAX
 
+y_NAX_test = y_GLM_test[1:] + mu_NAX
+y_test = dataset.demand[end_pos+1:test_pos]
 print('RMSE_NAX')
-print(rmse(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
+print(rmse(y_test,destd(y_NAX_test, M, m)))
     
 # Confidence Interval at confidence level 95% 
 
 y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
+
+print( sum((y_test>y_NAX_l)&(y_test<y_NAX_u))/len(y_NAX_l))
+
 
 # Plot 95% Confidence Interval
 x_axis = range(end_pos+1, test_pos)
