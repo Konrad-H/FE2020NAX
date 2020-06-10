@@ -1,7 +1,6 @@
 def pinball(y, y_test, sigma, M, m):
     import numpy as np
     from scipy.stats import norm
-
     NIP = np.zeros((len(y), 99))
 
     for ii in range(99):

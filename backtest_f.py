@@ -11,7 +11,7 @@ def backtest(y_real, y_pred, confidence_levels, sigma, M, m):
         if cl==5:
             exception_vec = [1]*len(y_real) - ((y_real>=IC_l) & (y_real<=IC_u))
     
-    # Unconditional Covaraage at 95% confidence level
+    # Unconditional Covarage at 95% confidence level
     backtested_95 = backtested_levels[5]
     exceptions = N - backtested_95
     alpha = 1-confidence_levels[5]

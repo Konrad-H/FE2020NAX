@@ -1,8 +1,6 @@
 # To add a new cell, type '# %%'
 # To add a new markdown cell, type '# %% [markdown]'
 # %%
-#import key packageskeras.utils.plot_model(model, "my_first_model.png")
-
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -11,234 +9,299 @@ import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd 
+from pandas import Series
 
-from tf_ts_functions import  plot_train_history, multivariate_data
-from NAX_functions import custom_loss, inverse_std
+from MLE_loss import custom_loss
 from tensorflow.keras.callbacks import EarlyStopping
+from dest_f import destd
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
+# %% USED PARAMETERS IN THE CODE
 
-# %% LOAD DATA
-df = pd.read_csv("train_data.csv",index_col=0) 
-df.head() #length 1095
-## UNIVARIATE MODEL 
-## TO UNDERSTAND THIS 
-# %% functions
+# How to split the data
+START_SPLIT = 0       #FIRST LINE
+TRAIN_SPLIT = 1095    #SPLIT LINE
+END_SPLIT = 1095+365  #LAST LINE 
 
-
-
-
-# %% PLOT AND STANDARDIZE
-# RMSE_NAX 15776.347510314612 with sigmoid
-
-START_SPLIT = 0
-TRAIN_SPLIT = 1095
-VAL_SPLIT = 1095+365
+# BATCH SIZE to be used in the training
 BATCH_SIZE = 50 #None
-BUFFER_SIZE = 5
 
-EVALUATION_INTERVAL = 500
-EPOCHS = 50 #200
-REG_PARAM = 0.0001
+# NUMBER OF EPOCHS for the training
+EPOCHS = 500 #200
+
+# PARAMETERS OF THE MODEL
+REG_PARAM = 0.0001  #L1 normalization parameter
 ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003
-HIDDEN_NEURONS=3 #3
-LOSS_FUNCTION =  custom_loss #custom_loss #'mae', 'mse'
-OUTPUT_NEURONS= 2 #2
-INPUT_SHAPE = (2,10)
-STOPPATIENCE = 10
+LEARN_RATE = 0.003  #learn rate of ADAM function
+HIDDEN_NEURONS=3    #as written
+LOSS_FUNCTION =  custom_loss  #as written
+OUTPUT_NEURONS= 2             #as written
+OUT_KERNEL = 'glorot_uniform' # weights for the Kernel Init
+OUT_BIAS = 'zeros'            # weights for the BIAS Init
 
-past_history = 2
-future_target = 0
-STEP = 1
-# opt=tf.keras.optimizers.RMSprop()
+# Shape of the input of the model, 2 time steps, 10 features
+INPUT_SHAPE = (2,10)
+
+# How many iterations before keras callbacks stops the function
+STOPPATIENCE = 50
+
+# Parameters of Multivariate Data
+past_history = 1  #Number of steps back in time, taken for prediction
+future_target = 0 #How much to predict in advance
+
 
 # %%
 
-def prep_data(df,
-                    START_SPLIT = 0,
+def prep_data(df, START_SPLIT = 0,
                     TRAIN_SPLIT = 1095,
-                    VAL_SPLIT = 1095+365,
-                    DAYS_NOT_STD=False):
+                    END_SPLIT = 1095+365):
+
+    # Takes a df and outputs the needed features for our model, standardized
+    #
+    # INPUTS:
+    # df:           pandas dataframe with the features and labels
+    #
+    # OUTPUTS:
+    # dataset:      numpy array with the features of our dataset
+    # labels:       numpy array with labels of out dataset
+
     features_considered = ['drybulb','dewpnt']
 
     for i in range(1,9):
-        features_considered += [str(i) ]
+        features_considered += [str(i)]
 
     features = df[features_considered]
     features.head()
+    # features.plot(subplots=True)
 
-    labels=np.array(df['residuals'])
-    # %% standardize dataset
-    #features.plot(subplots=True)
-    if DAYS_NOT_STD:
-        features['1'] = (features['1']-features['1'].min())/(features['1'].max()-features['1'].min())
+    labels = np.array(df['residuals'])
 
+    # %% standardize features s.t. mean = 0, variance = 1
     dataset = features.values
     data_mean = dataset[START_SPLIT:TRAIN_SPLIT].mean(axis=0)
     data_std = dataset[START_SPLIT:TRAIN_SPLIT].std(axis=0)
 
     dataset = (dataset-data_mean)/data_std
+    
     return dataset, labels
 
-# %%
+
+def multivariate_data(features, target, start_index, end_index, history_size,
+                      target_size, single_step = False):
+
+  # Uses multivariate data to aggregate the data form features and target
+  # in couples in the structure (x(t-1),x(t)) (y(t)) over the time window 
+  # given by start_index and end_index
+  #
+  # Inputs and Outputs as in aggregate_data
+  
+  data = []
+  labels = []
+  start_index = start_index + history_size
+  if end_index is None:
+    end_index = len(features) - target_size
+
+  for i in range(start_index, end_index):
+    indices = range(i-history_size, i+1)
+    data.append(features[indices])
+
+    if single_step:
+      labels.append(target[i])
+    else:
+      labels.append(target[i:i+target_size])
+
+  return np.array(data), np.array(labels)
 
 
-
-def aggregate_data(features,labels,
+def aggregate_data(features, labels,
             START_SPLIT = 0,
             TRAIN_SPLIT = 1095,
-            VAL_SPLIT = 1095+365,
-            past_history = 2,
-            future_target = -1,
-            STEP = 1):
-
-
+            END_SPLIT = 1095+365,
+            past_history = 1,
+            future_target = 0):
+          
+    # Uses multivariate data to aggregate the data form features and labels
+    # in couples in the structure (x(t-1),x(t)) (y(t)), both for train and
+    # validation set
+    #
+    # INPUTS:
+    # features, labels: output from prep_data
+    # others previously explained
+    #
+    # OUTPUTS:
+    # x's tensor of dim ?,past_history, length(features), containing input of the Neural Network
+    # y's tensor of dim ?,1, length(labels), contatining labels of the Neural Network
+    # where ? is the dim of train or validation respectively
 
     x_train, y_train = multivariate_data(features, labels, START_SPLIT,
                                                     TRAIN_SPLIT, past_history,
-                                                    future_target, STEP,
+                                                    future_target,
                                                     single_step=True)
     x_val, y_val = multivariate_data(features, labels,
-                                                TRAIN_SPLIT, VAL_SPLIT, past_history,
-                                                future_target, STEP,
+                                                TRAIN_SPLIT, END_SPLIT, past_history,
+                                                future_target,
                                                 single_step=True)
     #print ('Single window of past history : {}'.format(x_train[0].shape))
     return x_train, y_train,x_val, y_val
 
-def ready_data(x_train, y_train,x_val, y_val,
-                BATCH_SIZE = 50,
-                shuffle=False,
-                BUFFER_SIZE = 50):           
-    # %% TRAIN VAL DATA
-    train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    if shuffle ==True:
-        train_data = train_data.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
-    else:
-        train_data = train_data.cache().batch(BATCH_SIZE).repeat()
-
-    val_data = tf.data.Dataset.from_tensor_slices((x_val, y_val))
-    val_data = val_data.batch(BATCH_SIZE).repeat()
-    return train_data,val_data
-# %%
 
 def NAX_model(INPUT_SHAPE=(2,10),
             REG_PARAM = 0.0001,
             ACT_FUN = 'softmax',
             LEARN_RATE = 0.003,
-            HIDDEN_NEURONS=3 ,
-            OUTPUT_NEURONS= 2,
-            LOSS_FUNCTION =  custom_loss):
+            HIDDEN_NEURONS = 3 ,
+            OUTPUT_NEURONS = 2,
+            LOSS_FUNCTION = custom_loss,
+            OUT_KERNEL = 'glorot_uniform',
+            OUT_BIAS = 'zeros',
+            HID_KERNEL = 'glorot_uniform',
+            HID_BIAS = 'zeros'
+            ):
+    
+    # Using the parameters previously defined returns the NAX model,
+    # composed by a simple RNN layer and a Dense layer as output
 
-    act_reg = tf.keras.regularizers.l1 (REG_PARAM)
-    opt = tf.keras.optimizers.Adam(LEARN_RATE)
-
+    act_reg = tf.keras.regularizers.l1(REG_PARAM)
+    opt = tf.keras.optimizers.Adam(learning_rate=LEARN_RATE)
+    
     model = tf.keras.models.Sequential()
 
     model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
-                                            input_shape=INPUT_SHAPE,
-                                            activation=ACT_FUN,
-                                            activity_regularizer= act_reg ,
-                                            #  kernel_initializer=tf.keras.initializers.RandomNormal(stddev=1),
-                                            # bias_initializer=tf.keras.initializers.Ones()
-
-                                            ))
-                                            
-    model.add(tf.keras.layers.Dense(OUTPUT_NEURONS))
-
-
-
-    # opt = tf.keras.optimizers.RMSprop()
+                                        input_shape = INPUT_SHAPE,
+                                        activation = ACT_FUN,
+                                        activity_regularizer = act_reg,
+                                        kernel_initializer=HID_KERNEL,
+                                        bias_initializer=HID_BIAS
+                                        ))
+                              
+    model.add(tf.keras.layers.Dense(OUTPUT_NEURONS,
+              kernel_initializer=OUT_KERNEL,
+              bias_initializer=OUT_BIAS
+              ))
+    
     model.compile(optimizer=opt, loss=LOSS_FUNCTION)
     return model
 
-# %%
 
-
-def demands(y_pred, y_val,df,START):
+def demands(y_pred, y_val, df, START, M, m):
     N_val = len(y_pred)
-    the_length = len(df['std_demand'])
 
-    std_demand_true = pd.Series(df['std_demand'][START:START+N_val])
-    std_demand_NAX = (std_demand_true- y_val)+y_pred[:,0]
+    # Calculates the demands in original units from the standard predictions
+    #
+    # INPUTS:
+    # y_pred: 2-dim array with predictions and 'raw' std dev (needs y2var)
+    # y_val : 1-dim array with true values
+    # df    : Original dataframe used
+    # START : First predicted position in df
+    # M     : Maximum log_demand in 2008 - 2016
+    # m     : Minimum log_demand in 2008 - 2016
+    #
+    # OUTPUTS:
+    # demand_true: True original demand
+    # demand_NAX:  NAX predicited demand
+    # demand_GLM:  GLM predicted demand
+
+    std_demand_true = Series(df['std_demand'][START:START+N_val])
     std_demand_GLM = (std_demand_true- y_val)
-    demand_log_train= pd.Series(df['log_demand'][START_SPLIT:TRAIN_SPLIT]) 
+    std_demand_NAX = std_demand_GLM+y_pred[:,0]
 
-    demand_true=np.exp(inverse_std(std_demand_true,demand_log_train) )
-    demand_NAX=np.exp(inverse_std(std_demand_NAX,demand_log_train) )
-    demand_GLM=np.exp(inverse_std(std_demand_GLM,demand_log_train) )
+    demand_true = destd(std_demand_true, M, m)
+    demand_NAX = destd(std_demand_NAX, M, m)
+    demand_GLM = destd(std_demand_GLM, M, m)
     return demand_true, demand_NAX, demand_GLM 
+
+
+def plot_train_history(history, title):
     
-def rmse(predictions, targets):
-    return np.sqrt(((predictions - targets) ** 2).mean())
+    # Plots the val and train loss across epochs
+    # 
+    # INPUTS:
+    # history: output from model.fit
+    # title:   name of plot
 
+  loss = history.history['loss']
+  val_loss = history.history['val_loss']
 
-from NAX_f import prep_data, aggregate_data, NAX_model, demands
+  epochs = range(len(loss))
 
+  plt.figure()
 
-mpl.rcParams['figure.figsize'] = (8, 6)
-mpl.rcParams['axes.grid'] = False
+  plt.plot(epochs, loss, 'b', label='Training loss')
+  plt.plot(epochs, val_loss, 'r', label='Validation loss')
+  plt.title(title)
+  plt.legend()
 
+  plt.show()
 
-# %% LOAD DATA
-df_NAX = pd.read_csv("train_data.csv",index_col=0) 
-df_NAX.head() #length 1095
-## UNIVARIATE MODEL 
-## TO UNDERSTAND THIS 
-
-# %% PLOT AND STANDARDIZE
-# RMSE_NAX 15776.347510314612 with sigmoid
 
 def one_NAX_iteration(df,START_SPLIT = 0,
                 TRAIN_SPLIT = 1095,
-                VAL_SPLIT = 1095+365,
+                END_SPLIT = 1095+365,
                 BATCH_SIZE = 50,
                 EPOCHS = 500,
                 REG_PARAM = 0.0001,
                 ACT_FUN = 'softmax',
                 LEARN_RATE = 0.003,
-                HIDDEN_NEURONS=3 ,
-                LOSS_FUNCTION =  custom_loss,
+                HIDDEN_NEURONS = 3 ,
+                LOSS_FUNCTION = custom_loss,
                 OUTPUT_NEURONS= 2,
                 STOPPATIENCE = 50,
-                past_history = 2,
-                future_target = -1,
-                STEP = 1,
-                VERBOSE= 1,
-                VERBOSE_EARLY = 1):
+                past_history = 1,
+                future_target = 0,
+                VERBOSE = 1,
+                VERBOSE_EARLY = 1,
+                OUT_KERNEL = 'glorot_uniform',
+                OUT_BIAS = 'zeros',
+                HID_KERNEL = 'glorot_uniform',
+                HID_BIAS = 'zeros',):
+    
+    # Takes the previously defined hyperparameters, implement the NAX model
+    # and returns the prediction on the validation set and the fitted model
+    #
+    # OUTPUTS:
+    # y_pred:  predictions of the model for the test set
+    # history: all the information stored in the model fitting
+    # model:   the model which we trained
 
-
-    features,labels= prep_data(df_NAX,
+    # Neural Network features and labels are defined
+    features, labels = prep_data(df,
                         START_SPLIT = START_SPLIT,
                         TRAIN_SPLIT = TRAIN_SPLIT,
-                        VAL_SPLIT = VAL_SPLIT,DAYS_NOT_STD=True)
+                        END_SPLIT = END_SPLIT)
+    
+    # Inputs and targets both on train and validation test are defined
     x_train, y_train,x_val, y_val = aggregate_data(features,labels,
                                     START_SPLIT = START_SPLIT,
                                     TRAIN_SPLIT = TRAIN_SPLIT,
-                                    VAL_SPLIT = VAL_SPLIT,
+                                    END_SPLIT = END_SPLIT,
                                     past_history = past_history,
-                                    future_target = future_target,
-                                    STEP = STEP)
+                                    future_target = future_target)
 
-    # %%
-
-    model = NAX_model(INPUT_SHAPE=x_train.shape[-2:],
+    # The NAX Model is built
+    model = NAX_model(INPUT_SHAPE = x_train.shape[-2:],
                 REG_PARAM = REG_PARAM,
                 ACT_FUN = ACT_FUN,
                 LEARN_RATE = LEARN_RATE,
-                HIDDEN_NEURONS=HIDDEN_NEURONS ,
-                OUTPUT_NEURONS= OUTPUT_NEURONS,
-                LOSS_FUNCTION =  LOSS_FUNCTION)
+                HIDDEN_NEURONS = HIDDEN_NEURONS ,
+                OUTPUT_NEURONS = OUTPUT_NEURONS,
+                LOSS_FUNCTION =  LOSS_FUNCTION,
+                OUT_KERNEL = OUT_KERNEL,
+                OUT_BIAS = OUT_BIAS,
+                HID_KERNEL = HID_KERNEL,
+                HID_BIAS = HID_BIAS
+                )
 
+    # EarlyStopping callbacks option is defined
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
+
+    # NAX model is calibrated
     history=model.fit(
         x=x_train, y=y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose=VERBOSE, callbacks=[EARLYSTOP],
-        validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE,shuffle=True
-    )
-    # %%
-    y_pred =model.predict(x_val)
-    return y_pred,history
+        validation_data=(x_val,y_val), validation_batch_size=BATCH_SIZE)
+    
+    # Prediction on validation set
+    y_pred = model.predict(x_val)
 
+    return y_pred, history, model
