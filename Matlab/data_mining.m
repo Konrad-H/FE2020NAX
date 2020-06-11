@@ -1,10 +1,10 @@
 function dataset = data_mining(path,first_year,last_year)
 
 if nargin<2
-    first_year=2008
-    last_year =2016
+    first_year=2008;
+    last_year =2016;
 elseif nargin==2
-    last_year=inf
+    last_year=inf;
 end
 %% LOAD DATA
 raw_data = readtable(path);

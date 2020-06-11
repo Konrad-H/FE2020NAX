@@ -8,7 +8,8 @@ function err = rmse(predictions, targets)
 %
 % OUTPUT: 
 % err:          Root Mean Squared Error
+
 residuals = predictions - targets;
-err = sqrt(residuals*residuals/length(residuals))
+err = sqrt(residuals'*residuals/length(residuals));
 
 end
