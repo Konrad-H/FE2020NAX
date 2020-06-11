@@ -3,6 +3,7 @@ clc
 
 load regressors
 load residuals
+load demand
 %%
 y = cell2mat(residuals);
 x = cell2mat(regressors);
@@ -17,13 +18,6 @@ x_train = x( (1+start_pos) : train_split,:);
 y_val = y( (1+train_split) : end_pos);
 x_val = x( (1+train_split) : end_pos,:);
 
-%% SIMPLE AR SYSTEM
-data_train = iddata(y_train);
-sys = ar(data_train,1);
-
-data_val = iddata(y_val);
-compare(data_val, sys, 1);
-
 %% ARX MISO
 na = 1;
 nb = 1*ones(1,10);
@@ -36,10 +30,25 @@ data_val = iddata(y_val, x_val );
 %compare(data_val, sys, 1);
 
 y_pred = predict(sys, data_val,1);
+%%
+M = max(log(demand));
+m = min(log(demand));
+std_demand = (log(demand)-m)/(M-m);
 
+de_std = @(x) exp(x*(M-m)+m);
+X0Obj = idpar(y_train(end));
+options = forecastOptions('InitialCondition',X0Obj);
+y_pred = forecast(sys, data_train, size(x_val,1), x_val, options);
 
-hold on
-t=1:364
+t=1:365;
+demand_real = std_demand((1+train_split) : end_pos);
+demand_GLM  = demand_real - y_val;
+demand_ARX  = demand_GLM + y_pred.y;
 
-plot(t,y_val(1:364),t,y_pred.OutputData(2:365), '.')
-hold off
+demand_real =de_std(demand_real);
+demand_GLM =de_std(demand_GLM);
+demand_ARX =de_std(demand_ARX);
+
+rmse(demand_ARX,demand_real)
+plot(t,demand_real,t,demand_GLM,'y',t,demand_ARX,'r');
+

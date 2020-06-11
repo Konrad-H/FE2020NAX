@@ -3,7 +3,7 @@ clc
 
 %% Dataset extraction and datamining
 tic
-dataset = data_mining("gefcom.csv");
+dataset = data_mining("../gefcom.csv");
 toc
 
 % Dataset description
@@ -87,7 +87,6 @@ xlim([-2, 52])
 ylim([-0.4, 1.2])
 
 %% NAX Model
-
 % Needed data stored in a Table
 calendar_var_NAX = array2table(regressors);
 dataset_NAX = calendar_var_NAX(start_pos+1:val_pos, :);
