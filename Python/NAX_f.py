@@ -13,7 +13,7 @@ from pandas import Series
 
 from MLE_loss import custom_loss
 from tensorflow.keras.callbacks import EarlyStopping
-from dest_f import destd
+from standard_and_error_functions import destd
 
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False

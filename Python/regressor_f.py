@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd 
-from standardize_f import standardize
+from standard_and_error_functions import standardize
 
 def regressor(df):
 

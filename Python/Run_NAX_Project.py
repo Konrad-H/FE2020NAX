@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("gefcom.csv")
+dataset = data_mining("../gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -141,6 +141,7 @@ LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Ker
 LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
 LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
+
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
@@ -149,14 +150,6 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # %%
-
-# BEST COMBINATIONS
-# 3.65 %  -- [3, 'softmax', 0.01, 0.001, 50]
-# 7752.083425213432
-# 4.17 %  -- [3, 'softmax', 0.01, 0.001, 5000]
-# Epoch 00218: early stopping
-# 7718.890737165838
-
 seed = 14
 set_seed(seed)
 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
@@ -170,18 +163,27 @@ all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LIST_REG_PARAM = LIST_REG_PARAM,
                                 VERBOSE = VERBOSE,
                                 VERBOSE_EARLY = VERBOSE_EARLY)
-print(min_hyper_parameters)
-print(min_RMSE)
 
-plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<25000) + 25001*(all_RMSE.flatten()>25000))
 
 # %% SAVE (or load) results 
 
-name = 'Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
-array = np.array([all_RMSE])
-np.save(name, array)
-#data = np.load(name)
-#all_RMSE = data[0]
+name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
+
+# saving
+hid_weights = model.layers[0].get_weights()
+out_weights = model.layers[1].get_weights()
+array = np.array([all_RMSE,hid_weights,out_weights ])
+np.save(name+'.npy', array)
+
+# # loading
+# data = np.load(name+'.npy')
+# all_RMSE = data[0]
+# hid_weights = data[1]
+# out_weights = data[2]
+
+
+# summary
+plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<25000) + 25001*(all_RMSE.flatten()>25000))
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -198,13 +200,11 @@ LEARN_RATE = min_hyper_parameters[2] # ??
 REG_PARAM = min_hyper_parameters[3] # ??
 BATCH_SIZE = min_hyper_parameters[4] # ??
 
-hid_weights = model.layers[0].get_weights()
-hid_kernel = hid_weights[0]
-hid_bias = hid_weights[1]
 
-out_weights = model.layers[1].get_weights()
-out_kernel = out_weights[0]
-out_bias = out_weights[1]
+hid_kernel_hyp = hid_weights[0]
+hid_bias_hyp  = hid_weights[1]
+out_kernel_hyp  = out_weights[0]
+out_bias_hyp  = out_weights[1]
 
 
 # HYPER PARAMETERS READY
@@ -239,7 +239,7 @@ set_seed(seed)
 MLE_loss, y2var = loss_strike(strike)
 
 MAX_EPOCHS = 600 
-STOPPATIENCE = 100
+STOPPATIENCE = 50
 VERBOSE = 1
 VERBOSE_EARLY = 1
 
@@ -254,23 +254,16 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     VERBOSE= VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
                     LOSS_FUNCTION = MLE_loss,
-                    OUT_KERNEL = Constant(out_kernel),
-                    OUT_BIAS = Constant(out_bias),
-                    HID_KERNEL = Constant(hid_kernel)
+                    OUT_KERNEL = Constant(out_kernel_hyp ),
+                    OUT_BIAS = Constant(out_bias_hyp ),
+                    HID_KERNEL = Constant(hid_kernel_hyp )
+                    # HID_BIAS = Constant(hid_bias_hyp )
                     )
 plot_train_history(history,"Loss of model")
 
 mu_NAX = y_pred[:,0]
 sigma_NAX = np.sqrt(y2var(y_pred))
 sigma_NAX = sigma_NAX[:,0]
-
-hid_weights = model.layers[0].get_weights()
-hid_kernel = hid_weights[0]
-hid_bias = hid_weights[1]
-
-out_weights = model.layers[1].get_weights()
-out_kernel = out_weights[0]
-out_bias = out_weights[1]
 
 # %% Confidence interval
 from evaluation_functions import ConfidenceInterval
@@ -310,10 +303,15 @@ plt.show()
 # Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
 from GLM_and_ARX_models import ARX
-from backtest_f import backtest
 
 from evaluation_functions import pinball, backtest
-set_seed(14)
+set_seed(501)
+
+hid_kernel = hid_kernel_hyp
+hid_bias = hid_bias_hyp
+out_kernel = out_kernel_hyp
+out_bias = out_bias_hyp
+
 for i in range(5):
 
     # train and test sets are defined
@@ -363,10 +361,10 @@ for i in range(5):
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
                         LOSS_FUNCTION = MLE_loss,
-                        OUT_KERNEL = Constant(out_kernel),
-                        OUT_BIAS = Constant(out_bias),
-                        HID_KERNEL = Constant(hid_kernel)
-                        # HID_BIAS = Constant(hid_bias)
+                        OUT_KERNEL = Constant(out_kernel ),
+                        OUT_BIAS = Constant(out_bias ),
+                        HID_KERNEL = Constant(hid_kernel )
+                        # HID_BIAS = Constant(hid_bias )
                         )
 
     hid_weights = model.layers[0].get_weights()
@@ -376,6 +374,7 @@ for i in range(5):
     out_weights = model.layers[1].get_weights()
     out_kernel = out_weights[0]
     out_bias = out_weights[1]
+
     plot_train_history(history,"Loss of model")
     
     mu_NAX = y_pred[:,0]
@@ -472,4 +471,3 @@ for i in range(5):
     plt.ylabel('Backtested Level')
     plt.show()
 
-# %%

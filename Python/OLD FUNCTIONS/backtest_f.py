@@ -1,6 +1,7 @@
+import numpy as np
+from ConfidenceInterval_f import ConfidenceInterval
 def backtest(y_real, y_pred, confidence_levels, sigma, M, m):
-    import numpy as np
-    from ConfidenceInterval_f import ConfidenceInterval
+
 
     backtested_levels = np.zeros((len(confidence_levels)))
     N = len(y_real)
