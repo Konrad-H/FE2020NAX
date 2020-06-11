@@ -71,10 +71,8 @@ def find_hyperparam(df_NAX, M, m,
     # m:        minimum of the log_demand observed over the years: 2008 - 2016
     #
     # OUTPUTS:
-    # hyper_parameters: selected hyper-parameters
-    # min_RMSE:         minimum RMSE, corresponding to the selected hyper-parameters
     # RMSE:             RMSE corresponding to all possible combinations of hyper-parameters
-    # grid_history:     last element of the validation loss of each possible combinations of hyper-parameters
+    # out_model:        model corresponding to the best combination of hyper-parameters
 
     # get the needed features and the corresponding labels
     features, labels = prep_data(df_NAX,
@@ -90,7 +88,7 @@ def find_hyperparam(df_NAX, M, m,
                                      past_history = past_history,
                                      future_target = future_target)
 
-    START = TRAIN_SPLIT + past_history + future_target - 1
+    START = TRAIN_SPLIT + past_history + future_target
     # early stopping criterium
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
 
@@ -101,6 +99,7 @@ def find_hyperparam(df_NAX, M, m,
     RMSE = np.zeros((L1,L2,L3,L4,L5))
     grid_history = np.zeros((L1,L2,L3,L4,L5))
     c = 0
+    min_RMSE = 1e16
     for n1 in range(L1):
         for n2 in range(L2):
             for n3 in range(L3):
@@ -146,7 +145,12 @@ def find_hyperparam(df_NAX, M, m,
                             print(rmse(demand_NAX,demand_true), ' --', hyper_parameters)
                             # print(round(c/N_SCENARIOS,4)*100,'%)
 
-                        grid_history[n1][n2][n3][n4][n5] = history.history['val_loss'][-1]                   
+                        grid_history[n1][n2][n3][n4][n5] = history.history['val_loss'][-1]
+
+                        # update the model to output if current RMSE is lower than min_RMSE
+                        if RMSE[n1][n2][n3][n4][n5] <= min_RMSE:
+                            out_model = model                                            
+                            min_RMSE = RMSE[n1][n2][n3][n4][n5]                   
 
     # select the optimal hyper-parameters (corresponding to the minimum RMSE)
     argmin = np.unravel_index(np.argmin(RMSE,axis=None),RMSE.shape)
@@ -156,7 +160,4 @@ def find_hyperparam(df_NAX, M, m,
                         LIST_REG_PARAM[argmin[3]],
                         LIST_BATCH_SIZE[argmin[4]]]
     
-    # select the minimum RMSE
-    min_RMSE = np.min(RMSE,axis=None)
-
-    return hyper_parameters, min_RMSE, RMSE, grid_history
+    return RMSE, out_model
