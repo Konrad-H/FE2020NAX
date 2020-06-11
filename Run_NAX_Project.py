@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("gefcom.csv")
+dataset = data_mining("c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -157,26 +157,26 @@ VERBOSE_EARLY = 1
 # Epoch 00218: early stopping
 # 7718.890737165838
 
-# seed = 14
-# set_seed(seed)
-# min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
-#                                                            LOSS_FUNCTION = my_loss,
-#                                                            MAX_EPOCHS = MAX_EPOCHS,
-#                                                            STOPPATIENCE = STOPPATIENCE,
-#                                                            LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-#                                                            LIST_ACT_FUN = LIST_ACT_FUN,
-#                                                            LIST_LEARN_RATE = LIST_LEARN_RATE,
-#                                                            LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-#                                                            LIST_REG_PARAM = LIST_REG_PARAM,
-#                                                            VERBOSE = VERBOSE,
-#                                                            VERBOSE_EARLY = VERBOSE_EARLY)
-# print(min_hyper_parameters)
-# print(min_RMSE)
+seed = 14
+set_seed(seed)
+min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
+                                                            LOSS_FUNCTION = my_loss,
+                                                            MAX_EPOCHS = MAX_EPOCHS,
+                                                            STOPPATIENCE = STOPPATIENCE,
+                                                            LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                                            LIST_ACT_FUN = LIST_ACT_FUN,
+                                                            LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                                            LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                                            LIST_REG_PARAM = LIST_REG_PARAM,
+                                                            VERBOSE = VERBOSE,
+                                                            VERBOSE_EARLY = VERBOSE_EARLY)
+print(min_hyper_parameters)
+print(min_RMSE)
 
-# # %% 
-# name = 'RMSE'+str(seed)+'.'+str(strike)+'.npy'
-# array = np.array([all_RMSE, grid_history])
-# np.save(name, array)
+#  %% 
+name = 'RMSE'+str(seed)+'.'+str(strike)+'.npy'
+array = np.array([all_RMSE, grid_history])
+np.save(name, array)
 
 # %% STORED FOR EASY ACCESS
 data = np.load("Results/RMSE.14.0.0001.npy")

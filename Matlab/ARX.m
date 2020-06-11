@@ -23,7 +23,7 @@ testy_pos = (test_year - first_year)*365;
 
 % Build ARX model
 % Train set is defined
-X = [df(:, 9:10) df(:, 1:8)]; %take drybulb, dewpnt, all regressors except intercept's one % DA GUARDARE!!
+X = df(:, 1:10); %take drybulb, dewpnt, all regressors except intercept's one % DA GUARDARE!!
 y = df(:, 11); % take std_demand
 X_train = X(firsty_pos+1:lasty_pos, :);
 y_train = y(firsty_pos+1:lasty_pos, :);
