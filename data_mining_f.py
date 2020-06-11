@@ -14,8 +14,8 @@ def data_mining(PATH):
         
     # Load original dataset
     df = pd.read_csv(PATH)
-    # df.head()
-
+    print(df.head())
+    
     # Filter data
     df_cut = df[(df['zone']=='TOTAL') &     # consider the whole New England area
                 (df['year']>=2008) & (df['year']<=2016) &   # consider only the years between 2008 and 2016
@@ -26,7 +26,7 @@ def data_mining(PATH):
     ready_df = pd.DataFrame({'demand': df_cut['demand'].groupby(groups).sum(), 
                             'drybulb': df_cut['drybulb'].groupby(groups).mean(), 
                             'dewpnt': df_cut['dewpnt'].groupby(groups).mean()})
-    ready_df = ready_df.reset_index(level = ['date','year', 'month', 'day_of_week', 'holiday'])
+    ready_df = ready_df.reset_index(level = ['date', 'year', 'month', 'day_of_week', 'holiday'])
     
     return ready_df
 

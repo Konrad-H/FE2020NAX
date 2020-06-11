@@ -159,27 +159,29 @@ VERBOSE_EARLY = 1
 
 seed = 14
 set_seed(seed)
-# min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
-#                                                            LOSS_FUNCTION = my_loss,
-#                                                            MAX_EPOCHS = MAX_EPOCHS,
-#                                                            STOPPATIENCE = STOPPATIENCE,
-#                                                            LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-#                                                            LIST_ACT_FUN = LIST_ACT_FUN,
-#                                                            LIST_LEARN_RATE = LIST_LEARN_RATE,
-#                                                            LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-#                                                            LIST_REG_PARAM = LIST_REG_PARAM,
-#                                                            VERBOSE = VERBOSE,
-#                                                            VERBOSE_EARLY = VERBOSE_EARLY)
-# print(min_hyper_parameters)
-# print(min_RMSE)
+all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                                LOSS_FUNCTION = my_loss,
+                                MAX_EPOCHS = MAX_EPOCHS,
+                                STOPPATIENCE = STOPPATIENCE,
+                                LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                LIST_ACT_FUN = LIST_ACT_FUN,
+                                LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                LIST_REG_PARAM = LIST_REG_PARAM,
+                                VERBOSE = VERBOSE,
+                                VERBOSE_EARLY = VERBOSE_EARLY)
+print(min_hyper_parameters)
+print(min_RMSE)
+
+plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<25000) + 25001*(all_RMSE.flatten()>25000))
 
 # %% SAVE (or load) results 
 
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
-# array = np.array([all_RMSE, grid_history])
-# np.save(name, array)
-data = np.load(name)
-all_RMSE = data[0]
+array = np.array([all_RMSE])
+np.save(name, array)
+#data = np.load(name)
+#all_RMSE = data[0]
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -195,6 +197,14 @@ ACT_FUN = min_hyper_parameters[1] # ??
 LEARN_RATE = min_hyper_parameters[2] # ??
 REG_PARAM = min_hyper_parameters[3] # ??
 BATCH_SIZE = min_hyper_parameters[4] # ??
+
+hid_weights = model.layers[0].get_weights()
+hid_kernel = hid_weights[0]
+hid_bias = hid_weights[1]
+
+out_weights = model.layers[1].get_weights()
+out_kernel = out_weights[0]
+out_bias = out_weights[1]
 
 
 # HYPER PARAMETERS READY
@@ -230,10 +240,8 @@ MLE_loss, y2var = loss_strike(strike)
 
 MAX_EPOCHS = 600 
 STOPPATIENCE = 100
-VERBOSE=1
+VERBOSE = 1
 VERBOSE_EARLY = 1
-
-# SEED
 
 y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     BATCH_SIZE = BATCH_SIZE,
@@ -245,7 +253,10 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     STOPPATIENCE = STOPPATIENCE,
                     VERBOSE= VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
-                    LOSS_FUNCTION = MLE_loss
+                    LOSS_FUNCTION = MLE_loss,
+                    OUT_KERNEL = Constant(out_kernel),
+                    OUT_BIAS = Constant(out_bias),
+                    HID_KERNEL = Constant(hid_kernel)
                     )
 plot_train_history(history,"Loss of model")
 

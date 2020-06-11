@@ -32,12 +32,12 @@ BATCH_SIZE = 50 #None
 EPOCHS = 500 #200
 
 # PARAMETERS OF THE MODEL
-REG_PARAM = 0.0001  #L1 normalization parameter
-ACT_FUN = 'softmax' #'sigmoid' 'softmax'
-LEARN_RATE = 0.003  #learn rate of ADAM function
-HIDDEN_NEURONS=3    #as written
-LOSS_FUNCTION =  custom_loss  #as written
-OUTPUT_NEURONS= 2             #as written
+REG_PARAM = 0.0001  # L1 normalization parameter
+ACT_FUN = 'softmax' # 'sigmoid' 'softmax'
+LEARN_RATE = 0.003  # learn rate of ADAM function
+HIDDEN_NEURONS = 3  # as written
+LOSS_FUNCTION =  custom_loss  # as written
+OUTPUT_NEURONS= 2             # as written
 OUT_KERNEL = 'glorot_uniform' # weights for the Kernel Init
 OUT_BIAS = 'zeros'            # weights for the BIAS Init
 
@@ -186,8 +186,7 @@ def NAX_model(INPUT_SHAPE=(2,10),
 
 
 def demands(y_pred, y_val, df, START, M, m):
-    N_val = len(y_pred)
-
+    
     # Calculates the demands in original units from the standard predictions
     #
     # INPUTS:
@@ -202,6 +201,8 @@ def demands(y_pred, y_val, df, START, M, m):
     # demand_true: True original demand
     # demand_NAX:  NAX predicited demand
     # demand_GLM:  GLM predicted demand
+
+    N_val = len(y_pred)
 
     std_demand_true = Series(df['std_demand'][START:START+N_val])
     std_demand_GLM = (std_demand_true- y_val)
