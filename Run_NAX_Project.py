@@ -299,6 +299,7 @@ plt.show()
 # Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
 from GLM_and_ARX_models import ARX
+from backtest_f import backtest
 
 from evaluation_functions import pinball, backtest
 set_seed(14)
@@ -430,8 +431,6 @@ for i in range(5):
 
     
     # Backtest
-    from backtest_f import backtest
-
     print('backtest')
     confidence_levels = np.arange(0.9,1,0.01)
     backtested_levels_GLM, LR_Unc_GLM, LR_Cov_GLM = backtest(y, y_GLM_test, confidence_levels, sigma_GLM, M, m)
