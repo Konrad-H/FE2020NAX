@@ -5,6 +5,7 @@ from MLE_loss import loss_strike
 from tensorflow.keras.callbacks import EarlyStopping
 from NAX_f import prep_data, aggregate_data, NAX_model, demands
 from standard_and_error_functions import rmse
+from tensorflow.random import set_seed
 
 # %% Define the parameters
 my_loss = loss_strike(.005)     # custom loss function
