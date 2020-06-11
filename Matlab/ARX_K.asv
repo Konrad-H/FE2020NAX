@@ -1,0 +1,69 @@
+clear all
+clc
+
+load regressors
+load residuals
+%%
+y = cell2mat(residuals);
+x = cell2mat(regressors);
+
+start_pos=365*0;
+train_split = (start_pos) +365*3;
+end_pos = train_split + 365;
+
+y_train = y( (1+start_pos) : train_split);
+x_train = x( (1+start_pos) : train_split,:);
+
+y_val = y( (1+train_split) : end_pos);
+x_val = x( (1+train_split) : end_pos,:);
+
+%% SIMPLE AR SYSTEM
+data_train = iddata(y_train);
+sys = ar(data_train,1);
+
+data_val = iddata(y_val);
+compare(data_val, sys, 1);
+%% AR system using ARX
+data_train = iddata(y_train)
+sys = arx(data_train,[1 0 0])
+data_val = iddata(y_val )
+compare(data_val, sys, 1)
+
+%% SIMPLE ARX SYSTEM
+data_train = iddata(y_train, x_train )
+sys = arx(data_train,[1 0 0])
+data_val = iddata(y_val, x_val )
+compare(data_val, sys, 1)
+%% 
+A = [1  -1.5  0.7];
+B = [0 1 0.5];
+sys0 = idpoly(A,B);
+u = iddata([],idinput(300,'rbs'));
+e = iddata([],randn(300,1));
+y = sim(sys0,[u e]);
+z = [y,u];
+sys = arx(z,[2 2 1])
+
+%% ARX SISO
+na = 2;
+nb = 2;
+nk = 0;
+sys0 = idpoly(A,B);
+
+data_train = iddata(y_train, x_train(:,1) );
+sys = arx(data_train,[na nb nk])
+
+data_val = iddata(y_val, x_val(:,1) )
+compare(data_val, sys, 1)
+
+%% ARX MISO
+na = 2;
+nb = 2;
+nk = 0;
+sys0 = idpoly(A,B);
+
+data_train = iddata(y_train, x_train(:,1) );
+sys = arx(data_train,[na nb nk])
+
+data_val = iddata(y_val, x_val(:,1) )
+compare(data_val, sys, 1)

@@ -3,7 +3,7 @@ clc
 
 %% Dataset extraction and datamining
 tic
-dataset = data_mining("C:/Users/admin/Desktop/Desktop/Politecnico/Quarto anno/Secondo semestre/Financial engineering/Laboratori/Project7NAX/ProjectNAX/GitHub/gefcom.csv");
+dataset = data_mining("gefcom.csv");
 toc
 
 % Dataset description
