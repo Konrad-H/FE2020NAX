@@ -152,34 +152,34 @@ VERBOSE_EARLY = 1
 # %%
 seed = 14
 set_seed(seed)
-all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
-                                LOSS_FUNCTION = my_loss,
-                                MAX_EPOCHS = MAX_EPOCHS,
-                                STOPPATIENCE = STOPPATIENCE,
-                                LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-                                LIST_ACT_FUN = LIST_ACT_FUN,
-                                LIST_LEARN_RATE = LIST_LEARN_RATE,
-                                LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-                                LIST_REG_PARAM = LIST_REG_PARAM,
-                                VERBOSE = VERBOSE,
-                                VERBOSE_EARLY = VERBOSE_EARLY)
+# all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+#                                 LOSS_FUNCTION = my_loss,
+#                                 MAX_EPOCHS = MAX_EPOCHS,
+#                                 STOPPATIENCE = STOPPATIENCE,
+#                                 LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+#                                 LIST_ACT_FUN = LIST_ACT_FUN,
+#                                 LIST_LEARN_RATE = LIST_LEARN_RATE,
+#                                 LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+#                                 LIST_REG_PARAM = LIST_REG_PARAM,
+#                                 VERBOSE = VERBOSE,
+#                                 VERBOSE_EARLY = VERBOSE_EARLY)
 
 
 # %% SAVE (or load) results 
 
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-# saving
-hid_weights = model.layers[0].get_weights()
-out_weights = model.layers[1].get_weights()
-array = np.array([all_RMSE,hid_weights,out_weights ])
-np.save(name+'.npy', array)
+# # saving
+# hid_weights = model.layers[0].get_weights()
+# out_weights = model.layers[1].get_weights()
+# array = np.array([all_RMSE,hid_weights,out_weights ])
+# np.save(name+'.npy', array)
 
 # # loading
-# data = np.load(name+'.npy')
-# all_RMSE = data[0]
-# hid_weights = data[1]
-# out_weights = data[2]
+data = np.load(name+'.npy', allow_pickle=True)
+all_RMSE = data[0]
+hid_weights = data[1]
+out_weights = data[2]
 
 
 # summary
