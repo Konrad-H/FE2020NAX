@@ -123,13 +123,13 @@ def ARX(df, first_year, last_year, test_year):
 
     # %%
     # Graph on train set
-    x_axis = y_train.index
-    demand_std = pd.Series(y_train)
-    demand_ARX = pd.Series(y_pred_train, index=x_axis)
+    # x_axis = y_train.index
+    # demand_std = pd.Series(y_train)
+    # demand_ARX = pd.Series(y_pred_train, index=x_axis)
     
-    plt.figure()
-    demand_std.plot()
-    demand_ARX.plot()
-    plt.show()
+    # plt.figure()
+    # demand_std.plot()
+    # demand_ARX.plot()
+    # plt.show()
 
     return y_pred_test, sigma

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("../gefcom.csv")
+dataset = data_mining("gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -94,19 +94,19 @@ residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 
 # %%
 # Plot autocorrelation and partial autocorrelation of the residuals
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+# from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
+# residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
 
 # Autocorrelation
-plot_acf(residuals_plt, lags = range(0,51), alpha = None)
-plt.xlabel('Days')
-plt.show()
+# plot_acf(residuals_plt, lags = range(0,51), alpha = None)
+# plt.xlabel('Days')
+# plt.show()
 
 # Partial Autocorrelation
-plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
-plt.xlabel('Days')
-plt.show()
+# plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
+# plt.xlabel('Days')
+# plt.show()
 
 # %% NAX Model
 # Needed data stored in a DataFrame
@@ -210,7 +210,7 @@ out_bias_hyp  = out_weights[1]
 # HYPER PARAMETERS READY
 # %% ex. 5
 #
-start_date = 2008
+start_date = 2009
 end_date   = start_date+2
 test_date  = start_date+3
 start_pos = (start_date -2008)*365
@@ -222,10 +222,10 @@ residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 
 calendar_var_NAX = calendar_var[start_pos:test_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
-                        'log_demand': dataset.log_demand,
-                              'residuals': residuals,
-                              'drybulb': dataset.drybulb,
-                              'dewpnt': dataset.dewpnt})                             
+                          'log_demand': dataset.log_demand,
+                          'residuals': residuals,
+                          'drybulb': dataset.drybulb,
+                          'dewpnt': dataset.dewpnt})                             
 temp_data_NAX = temp_data[start_pos:test_pos]
 dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
@@ -238,7 +238,7 @@ from tensorflow.keras.initializers import Constant
 set_seed(seed)
 MLE_loss, y2var = loss_strike(strike)
 
-MAX_EPOCHS = 600 
+MAX_EPOCHS = 500 
 STOPPATIENCE = 50
 VERBOSE = 1
 VERBOSE_EARLY = 1
@@ -290,12 +290,19 @@ real_values = destd(dataset.std_demand[end_pos+1:test_pos], M, m)
 real_values = pd.Series(real_values, index=x_axis)
 
 plt.figure()
-plt.plot(x_axis, real_values, '-', color='b', linewidth=1.2)
-plt.plot(x_axis, lower_bound, color='r', linewidth=0.4)
-plt.plot(x_axis, upper_bound, color='r', linewidth=0.4)
-plt.plot(x_axis, estimated_values, color='r', linewidth=0.8)
-plt.fill_between(x_axis, lower_bound, upper_bound, facecolor='coral', interpolate=True)
+plt.plot(x_axis, real_values/1000, '-', color='b', linewidth=1.2, label='Realized')
+plt.plot(x_axis, lower_bound/1000, color='r', linewidth=0.4)
+plt.plot(x_axis, upper_bound/1000, color='r', linewidth=0.4)
+plt.plot(x_axis, estimated_values/1000, color='r', linewidth=0.8, label='Forecast')
+plt.fill_between(x_axis, lower_bound/1000, upper_bound/1000, facecolor='coral', interpolate=True, label='CI')
+plt.xticks(np.array([dataset[dataset.date=='2012-01-01'].index, dataset[dataset.date=='2012-04-01'].index, 
+            dataset[dataset.date=='2012-07-01'].index, dataset[dataset.date=='2012-10-01'].index,
+            dataset[dataset.date=='2013-01-01'].index]),
+            ['2012-01', '2012-04', '2012-07', '2012-10', '2013-01'])
+plt.ylabel('GWh')
+plt.legend()
 plt.show()
+
 
 # %%
 # Comparison of GLM, NAX and ARX models, through pinball and backtest techniques, and errors MAPE and RMSE
@@ -431,14 +438,13 @@ for i in range(5):
 
     # Pinball Loss Graph
     plt.figure()
-    plt.plot(pinplot_GLM.index/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
-    plt.plot(pinplot_NAX.index/100, pinplot_NAX.values/1000, color='black', label='NAX')
-    plt.plot(pinplot_ARX.index/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
+    plt.plot((pinplot_GLM.index+1)/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
+    plt.plot((pinplot_NAX.index+1)/100, pinplot_NAX.values/1000, color='black', label='NAX')
+    plt.plot((pinplot_ARX.index+1)/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
     plt.legend()
     plt.xlabel('Quantile')
     plt.ylabel('Pinball Loss [GWh]')
     plt.show()
-
     
     # Backtest
     print('backtest')
@@ -470,4 +476,6 @@ for i in range(5):
     plt.xlabel('Nominal Level')
     plt.ylabel('Backtested Level')
     plt.show()
+
+# %%
 
