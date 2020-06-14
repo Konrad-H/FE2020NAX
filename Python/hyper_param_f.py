@@ -6,6 +6,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from NAX_f import prep_data, aggregate_data, NAX_model, demands
 from standard_and_error_functions import rmse
 
+
 # %% Define the parameters
 my_loss = loss_strike(.005)     # custom loss function
 
@@ -52,9 +53,9 @@ def find_hyperparam(df_NAX, M, m,
                     
                     VERBOSE = VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
-                    OUT_KERNEL = 'glorot_uniform',
+                    OUT_KERNEL = 'zeros',
                     OUT_BIAS = 'zeros',
-                    HID_KERNEL = 'glorot_uniform',
+                    HID_KERNEL = 'zeros',
                     HID_BIAS = 'zeros'):
     
     # This function selects the optimal hyper-parameters (corresponding to the minimum RMSE)
@@ -184,9 +185,9 @@ def find_hyperparam_8(df_NAX, M, m,
                     
                     VERBOSE = VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
-                    OUT_KERNEL = 'glorot_uniform',
+                    OUT_KERNEL = 'zeros',
                     OUT_BIAS = 'zeros',
-                    HID_KERNEL = 'glorot_uniform',
+                    HID_KERNEL = 'zeros',
                     HID_BIAS = 'zeros'):
     
     # This function selects the optimal hyper-parameters (corresponding to the minimum RMSE)
