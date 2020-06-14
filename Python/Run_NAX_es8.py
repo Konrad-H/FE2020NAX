@@ -10,13 +10,17 @@ from tensorflow.random import set_seed
 import time
 import matplotlib.pyplot as plt
 
+from standard_and_error_functions import destd
 # %% 
 # Dataset extraction and datamining
 from data_mining_f import data_mining, data_standardize
 
-tic = time.time()
-dataset = data_mining("../gefcom.csv")
-toc = time.time()
+# tic = time.time()
+# dataset = data_mining("../gefcom.csv")
+# toc = time.time()
+# dataset.to_csv('dataset.csv')
+
+dataset = pd.read_csv('dataset.csv')
 # print(str(toc-tic) + ' sec Elapsed\n')
 
 # Summary of energy demand and weather variables
@@ -25,30 +29,31 @@ print()
 print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
  
 # %%
+# PLOT
 # Graph representing demand over 2009 and 2010
 # Sundays are highlighted by blue marker
-start_date = 2009 
-end_date   = 2010
-start_pos = (start_date -2008)*365
-end_pos   = (end_date+1 -2008)*365
+plot =False
+if plot:
+        start_date = 2009 
+        end_date   = 2010
+        start_pos = (start_date -2008)*365
+        end_pos   = (end_date+1 -2008)*365
+        dataset_plt = dataset[start_pos:end_pos+1]
 
-dataset_plt = dataset[start_pos:end_pos+1]
-
-# plot
-plt.figure()
-plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, color='red', linewidth=0.5, label='Consumption')
-plt.plot(dataset_plt.demand[dataset_plt.day_of_week=='Sun'].index, dataset_plt.demand[dataset_plt.day_of_week=='Sun'].values/1000, 
-        linestyle='', color='blue', marker='.', markersize=5, label='Sundays')
-plt.legend()
-plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_plt[dataset_plt.date=='2009-04-01'].index, 
-            dataset_plt[dataset_plt.date=='2009-07-01'].index, dataset_plt[dataset_plt.date=='2009-10-01'].index,
-            dataset_plt[dataset_plt.date=='2010-01-01'].index, dataset_plt[dataset_plt.date=='2010-04-01'].index,
-            dataset_plt[dataset_plt.date=='2010-07-01'].index, dataset_plt[dataset_plt.date=='2010-10-01'].index,
-            dataset_plt[dataset_plt.date=='2011-01-01'].index]),
-            ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
-            fontsize='small')
-plt.ylabel('GWh')
-plt.show()
+        plt.figure()
+        plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, color='red', linewidth=0.5, label='Consumption')
+        plt.plot(dataset_plt.demand[dataset_plt.day_of_week=='Sun'].index, dataset_plt.demand[dataset_plt.day_of_week=='Sun'].values/1000, 
+                linestyle='', color='blue', marker='.', markersize=5, label='Sundays')
+        plt.legend()
+        plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_plt[dataset_plt.date=='2009-04-01'].index, 
+                dataset_plt[dataset_plt.date=='2009-07-01'].index, dataset_plt[dataset_plt.date=='2009-10-01'].index,
+                dataset_plt[dataset_plt.date=='2010-01-01'].index, dataset_plt[dataset_plt.date=='2010-04-01'].index,
+                dataset_plt[dataset_plt.date=='2010-07-01'].index, dataset_plt[dataset_plt.date=='2010-10-01'].index,
+                dataset_plt[dataset_plt.date=='2011-01-01'].index]),
+                ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
+                fontsize='small')
+        plt.ylabel('GWh')
+        plt.show()
 
 # %% 
 # Numeric variables are standardized, mapping them in [0,1] 
@@ -56,7 +61,7 @@ dataset = data_standardize(dataset)
 
 # Maximum and minimum values taken by log_demand are saved, as they are useful to go 
 # back from standardized values to demand values, using custom function destd
-from standard_and_error_functions import destd
+
 M = max(dataset.log_demand)
 m = min(dataset.log_demand)
 
@@ -80,33 +85,34 @@ residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 
 # %%
 # GLM plot on train test - uncomment to plot it
+if plot:
+        x_axis = range(start_pos, end_pos)
+        demand_pred = destd(y_GLM_train,M,m)
 
-#x_axis = range(start_pos, end_pos)
-#demand_pred = destd(y_GLM_train,M,m)
+        demand_plt = pd.Series(dataset.demand[start_pos:end_pos],index=x_axis)
+        demand_pred_plt = pd.Series(demand_pred,index=x_axis)
 
-#demand_plt = pd.Series(dataset.demand[start_pos:end_pos],index=x_axis)
-#demand_pred_plt = pd.Series(demand_pred,index=x_axis)
-
-#plt.figure()
-#demand_plt.plot()
-#demand_pred_plt.plot()
-#plt.show()
+        plt.figure()
+        demand_plt.plot()
+        demand_pred_plt.plot()
+        plt.show()
 
 # %%
 # # Plot autocorrelation and partial autocorrelation of the residuals
-# from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+if plot:
+        from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-# residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
+        residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
 
-# # Autocorrelation
-# plot_acf(residuals_plt, lags = range(0,51), alpha = None)
-# plt.xlabel('Days')
-# plt.show()
+        # Autocorrelation
+        plot_acf(residuals_plt, lags = range(0,51), alpha = None)
+        plt.xlabel('Days')
+        plt.show()
 
-# # Partial Autocorrelation
-# plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
-# plt.xlabel('Days')
-# plt.show()
+        # Partial Autocorrelation
+        plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
+        plt.xlabel('Days')
+        plt.show()
 
 # %% NAX Model
 # Needed data stored in a DataFrame
@@ -135,11 +141,23 @@ strike = 0.0001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
-LIST_HIDDEN_NEURONS = [[3], [4], [5],[6], [8], [10]]    # number of neurons (hidden layer)
-LIST_ACT_FUN = ['softplus','softmax', 'sigmoid',  'tanh']   # activation function
-LIST_LEARN_RATE = [0.003, 0.1, 0.01, 0.001, 0.0007, 0.0005, 0.0001]     # initial learning rate (for Keras ADAM)
-LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
-LIST_BATCH_SIZE = [50]     # batch size, 5000 for no batch
+standard_hyper = False
+if standard_hyper:
+        LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
+        LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
+        LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
+        LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
+else:
+        BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
+        BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
+        MULTI_LAYER_HIDDEN = [[3,3],[3,3,3],[3,10],[10,3]]
+        COMBINATIONS = MULTI_LAYER_HIDDEN
+        LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN   # number of neurons (hidden layer)
+        LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']   # activation function
+        LIST_LEARN_RATE = [0.0001, 0.001, 0.01, 0.1]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
+        LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
 
 
 START_SPLIT = 0
@@ -150,7 +168,7 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # %%
-seed = 14
+seed = 252
 set_seed(seed)
 from tensorflow.keras import initializers
 initializer = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000)
@@ -169,19 +187,19 @@ all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
 
 # %% SAVE (or load) results 
 
-name = 'Results_8/RMSE.'+str(seed)+'.'+str(strike)
+name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
 # saving
-# hid_weights = model.layers[0].get_weights()
-# out_weights = model.layers[1].get_weights()
-# array = np.array([all_RMSE,hid_weights,out_weights ])
-# np.save(name+'.npy', array)
+hid_weights = model.layers[0].get_weights()
+out_weights = model.layers[1].get_weights()
+array = np.array([all_RMSE,hid_weights,out_weights ])
+np.save(name+'.npy', array)
 
 # # loading
-data = np.load(name+'.npy', allow_pickle=True)
-all_RMSE = data[0]
-hid_weights = data[1]
-out_weights = data[2]
+# data = np.load(name+'.npy', allow_pickle=True)
+# all_RMSE = data[0]
+# hid_weights = data[1]
+# out_weights = data[2]
 
 
 # summary
@@ -209,18 +227,17 @@ for i in range(k):
         best_values[i][0]=all_RMSE.flatten()[idx[i]]
         best_values[i][1:6]=min_hyper_parameters
 best_values = sorted(best_values,key=lambda x: (x[0]))
+col_names = ['RMSE','Hid Neurons','Act Fun', 'Learn Rate', 'Reg Param', 'Batch Size']
+df_best = pd.DataFrame(best_values, columns=col_names)
+TH=9500
+df_best = df_best[df_best['RMSE']<TH]
 
-plt.subplot(2, 3, 1)
-plt.hist(np.array(best_values)[:,1])
-plt.subplot(2, 3, 2)
-plt.hist(np.array(best_values)[:,2])
-plt.subplot(2, 3, 3)
-plt.hist(np.array(best_values)[:,3])
-plt.subplot(2, 3, 4)
-plt.hist(np.array(best_values)[:,4])
-plt.subplot(2, 3, 5)
-plt.hist(np.array(best_values)[:,5])
-plt.subplot(2, 3, 6)
+for i in range(6):
+        plt.subplot(2, 3, 1+i)
+        if i==0:
+                plt.hist(df_best[col_names[i]])
+        else:
+                df_best[col_names[i]].value_counts().plot(kind='bar')
 
 
 # %% Choose Hyperparameters
