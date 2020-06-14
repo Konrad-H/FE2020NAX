@@ -159,7 +159,6 @@ else:
         LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
         LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
 
-
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
