@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("gefcom.csv")
+dataset = data_mining("..\gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -35,7 +35,7 @@ end_pos   = (end_date+1 -2008)*365
 dataset_plt = dataset[start_pos:end_pos+1]
 
 # plot
-plt.figure()
+# plt.figure()
 plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, color='red', linewidth=0.5, label='Consumption')
 plt.plot(dataset_plt.demand[dataset_plt.day_of_week=='Sun'].index, dataset_plt.demand[dataset_plt.day_of_week=='Sun'].values/1000, 
         linestyle='', color='blue', marker='.', markersize=5, label='Sundays')
@@ -48,7 +48,7 @@ plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_
             ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
             fontsize='small')
 plt.ylabel('GWh')
-plt.show()
+# plt.show()
 
 # %% 
 # Numeric variables are standardized, mapping them in [0,1] 
@@ -150,19 +150,26 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # %%
-seed = 14
+ # 501 used for zeros initialization
+ # 108 used for normal (0,.001)
+seed = 108
 set_seed(seed)
-# all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
-#                                 LOSS_FUNCTION = my_loss,
-#                                 MAX_EPOCHS = MAX_EPOCHS,
-#                                 STOPPATIENCE = STOPPATIENCE,
-#                                 LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-#                                 LIST_ACT_FUN = LIST_ACT_FUN,
-#                                 LIST_LEARN_RATE = LIST_LEARN_RATE,
-#                                 LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-#                                 LIST_REG_PARAM = LIST_REG_PARAM,
-#                                 VERBOSE = VERBOSE,
-#                                 VERBOSE_EARLY = VERBOSE_EARLY)
+from tensorflow.keras import initializers
+all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                                LOSS_FUNCTION = my_loss,
+                                MAX_EPOCHS = MAX_EPOCHS,
+                                STOPPATIENCE = STOPPATIENCE,
+                                LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                LIST_ACT_FUN = LIST_ACT_FUN,
+                                LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                LIST_REG_PARAM = LIST_REG_PARAM,
+                                VERBOSE = VERBOSE,
+                                VERBOSE_EARLY = VERBOSE_EARLY,
+                                OUT_KERNEL = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000),
+                                OUT_BIAS = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000),
+                                HID_KERNEL = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000),
+                                HID_BIAS = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000))
 
 
 # %% SAVE (or load) results 
@@ -170,16 +177,16 @@ set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
 # # saving
-# hid_weights = model.layers[0].get_weights()
-# out_weights = model.layers[1].get_weights()
-# array = np.array([all_RMSE,hid_weights,out_weights ])
-# np.save(name+'.npy', array)
+hid_weights = model.layers[0].get_weights()
+out_weights = model.layers[1].get_weights()
+array = np.array([all_RMSE,hid_weights,out_weights ])
+np.save(name+'.npy', array)
 
 # # loading
-data = np.load(name+'.npy', allow_pickle=True)
-all_RMSE = data[0]
-hid_weights = data[1]
-out_weights = data[2]
+# data = np.load(name+'.npy', allow_pickle=True)
+# all_RMSE = data[0]
+# hid_weights = data[1]
+# out_weights = data[2]
 
 
 # summary

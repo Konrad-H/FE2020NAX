@@ -170,20 +170,20 @@ all_RMSE, model = find_hyperparam_8(df_NAX, M = M, m = m,
 name = 'Results_8/RMSE.'+str(seed)+'.'+str(strike)
 
 # saving
-hid_weights = model.layers[0].get_weights()
-out_weights = model.layers[1].get_weights()
-array = np.array([all_RMSE,hid_weights,out_weights ])
-np.save(name+'.npy', array)
+# hid_weights = model.layers[0].get_weights()
+# out_weights = model.layers[1].get_weights()
+# array = np.array([all_RMSE,hid_weights,out_weights ])
+# np.save(name+'.npy', array)
 
 # # loading
-# data = np.load(name+'.npy', allow_pickle=True)
-# all_RMSE = data[0]
-# hid_weights = data[1]
-# out_weights = data[2]
+data = np.load(name+'.npy', allow_pickle=True)
+all_RMSE = data[0]
+hid_weights = data[1]
+out_weights = data[2]
 
 
 # summary
-plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<25000) + 25001*(all_RMSE.flatten()>25000))
+plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
