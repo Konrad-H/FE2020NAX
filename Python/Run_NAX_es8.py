@@ -93,20 +93,20 @@ residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 #plt.show()
 
 # %%
-# Plot autocorrelation and partial autocorrelation of the residuals
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+# # Plot autocorrelation and partial autocorrelation of the residuals
+# from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
+# residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
 
-# Autocorrelation
-plot_acf(residuals_plt, lags = range(0,51), alpha = None)
-plt.xlabel('Days')
-plt.show()
+# # Autocorrelation
+# plot_acf(residuals_plt, lags = range(0,51), alpha = None)
+# plt.xlabel('Days')
+# plt.show()
 
-# Partial Autocorrelation
-plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
-plt.xlabel('Days')
-plt.show()
+# # Partial Autocorrelation
+# plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
+# plt.xlabel('Days')
+# plt.show()
 
 # %% NAX Model
 # Needed data stored in a DataFrame
@@ -125,7 +125,7 @@ df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 
 # %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
-from hyper_param_f import find_hyperparam_8
+from hyper_param_f import find_hyperparam
 from MLE_loss import loss_strike
 
 MAX_EPOCHS = 500
@@ -135,11 +135,11 @@ strike = 0.0001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
-LIST_HIDDEN_NEURONS = [3, 4, 5, 6, 8, 10]      # number of neurons (hidden layer)
-LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
-LIST_LEARN_RATE = [0.1, 0.01, 0.001, 0.0007, 0.0005, 0.0001]     # initial learning rate (for Keras ADAM)
-LIST_REG_PARAM = [0.01, 0.001, 0.0001, 0]     # regularization parameter
-LIST_BATCH_SIZE = [50, 100, 350, 5000]     # batch size, 5000 for no batch
+LIST_HIDDEN_NEURONS = [[3], [4], [5],[6], [8], [10]]    # number of neurons (hidden layer)
+LIST_ACT_FUN = ['softplus','softmax', 'sigmoid',  'tanh']   # activation function
+LIST_LEARN_RATE = [0.003, 0.1, 0.01, 0.001, 0.0007, 0.0005, 0.0001]     # initial learning rate (for Keras ADAM)
+LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
+LIST_BATCH_SIZE = [50]     # batch size, 5000 for no batch
 
 
 START_SPLIT = 0
@@ -152,7 +152,9 @@ VERBOSE_EARLY = 1
 # %%
 seed = 14
 set_seed(seed)
-all_RMSE, model = find_hyperparam_8(df_NAX, M = M, m = m,
+from tensorflow.keras import initializers
+initializer = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000)
+all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LOSS_FUNCTION = my_loss,
                                 MAX_EPOCHS = MAX_EPOCHS,
                                 STOPPATIENCE = STOPPATIENCE,

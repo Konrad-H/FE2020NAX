@@ -15,9 +15,6 @@ from MLE_loss import custom_loss
 from tensorflow.keras.callbacks import EarlyStopping
 from standard_and_error_functions import destd
 
-mpl.rcParams['figure.figsize'] = (8, 6)
-mpl.rcParams['axes.grid'] = False
-
 # %% USED PARAMETERS IN THE CODE
 
 # How to split the data
@@ -38,7 +35,7 @@ LEARN_RATE = 0.003  # learn rate of ADAM function
 HIDDEN_NEURONS = 3  # as written
 LOSS_FUNCTION =  custom_loss  # as written
 OUTPUT_NEURONS= 2             # as written
-OUT_KERNEL = 'glorot_uniform' # weights for the Kernel Init
+OUT_KERNEL = 'zeros'     # weights for the Kernel Init
 OUT_BIAS = 'zeros'            # weights for the BIAS Init
 
 # Shape of the input of the model, 2 time steps, 10 features
@@ -151,13 +148,15 @@ def NAX_model(INPUT_SHAPE=(2,10),
             REG_PARAM = 0.0001,
             ACT_FUN = 'softmax',
             LEARN_RATE = 0.003,
-            HIDDEN_NEURONS = 3 ,
+            HIDDEN_NEURONS = [3] ,
             OUTPUT_NEURONS = 2,
             LOSS_FUNCTION = custom_loss,
-            OUT_KERNEL = 'glorot_uniform',
+            OUT_KERNEL = 'zeros'    ,
             OUT_BIAS = 'zeros',
-            HID_KERNEL = 'glorot_uniform',
-            HID_BIAS = 'zeros'
+            HID_KERNEL = 'zeros'    ,
+            HID_REC = "orthogonal",
+            HID_BIAS = 'zeros',
+            N_LAYERS = 1
             ):
     
     # Using the parameters previously defined returns the NAX model,
@@ -167,15 +166,26 @@ def NAX_model(INPUT_SHAPE=(2,10),
     opt = tf.keras.optimizers.Adam(learning_rate=LEARN_RATE)
     
     model = tf.keras.models.Sequential()
-
-    model.add(tf.keras.layers.SimpleRNN(HIDDEN_NEURONS,
-                                        input_shape = INPUT_SHAPE,
-                                        activation = ACT_FUN,
-                                        activity_regularizer = act_reg,
-                                        kernel_initializer=HID_KERNEL,
-                                        bias_initializer=HID_BIAS
-                                        ))
-                              
+    layers = len(HIDDEN_NEURONS)
+    inputs = [INPUT_SHAPE]
+    for i in range(layers-1):
+      inputs += [(INPUT_SHAPE[0],HIDDEN_NEURONS[i])]
+    return_sequences = True
+    for i in range(layers):
+      layer_input = inputs[i]
+      layer_neurons= HIDDEN_NEURONS[i]
+      if i==layers-1:
+        return_sequences = False
+      model.add(tf.keras.layers.SimpleRNN(layer_neurons,
+                                          input_shape = layer_input,
+                                          activation = ACT_FUN,
+                                          activity_regularizer = act_reg,
+                                          kernel_initializer=HID_KERNEL,
+                                          recurrent_initializer=HID_REC,
+                                          bias_initializer=HID_BIAS,
+                                          return_sequences = return_sequences
+                                          ))
+                          
     model.add(tf.keras.layers.Dense(OUTPUT_NEURONS,
               kernel_initializer=OUT_KERNEL,
               bias_initializer=OUT_BIAS
@@ -253,10 +263,12 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 future_target = 0,
                 VERBOSE = 1,
                 VERBOSE_EARLY = 1,
-                OUT_KERNEL = 'glorot_uniform',
+                OUT_KERNEL = 'zeros',
                 OUT_BIAS = 'zeros',
-                HID_KERNEL = 'glorot_uniform',
-                HID_BIAS = 'zeros',):
+                HID_KERNEL = 'zeros',
+                HID_REC = "orthogonal",
+                HID_BIAS = 'zeros',
+                N_LAYERS = 1):
     
     # Takes the previously defined hyperparameters, implement the NAX model
     # and returns the prediction on the validation set and the fitted model
@@ -291,7 +303,9 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 OUT_KERNEL = OUT_KERNEL,
                 OUT_BIAS = OUT_BIAS,
                 HID_KERNEL = HID_KERNEL,
-                HID_BIAS = HID_BIAS
+                HID_REC = HID_REC,
+                HID_BIAS = HID_BIAS,
+                N_LAYERS = N_LAYERS
                 )
 
     # EarlyStopping callbacks option is defined

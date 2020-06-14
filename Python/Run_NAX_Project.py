@@ -135,7 +135,7 @@ strike = 0.0001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
-LIST_HIDDEN_NEURONS = [3, 4, 5, 6]      # number of neurons (hidden layer)
+LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
 LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
 LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
 LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
@@ -155,6 +155,8 @@ VERBOSE_EARLY = 1
 seed = 108
 set_seed(seed)
 from tensorflow.keras import initializers
+initializer = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000)
+# initializer = 'zeros'
 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LOSS_FUNCTION = my_loss,
                                 MAX_EPOCHS = MAX_EPOCHS,
@@ -166,10 +168,10 @@ all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LIST_REG_PARAM = LIST_REG_PARAM,
                                 VERBOSE = VERBOSE,
                                 VERBOSE_EARLY = VERBOSE_EARLY,
-                                OUT_KERNEL = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000),
-                                OUT_BIAS = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000),
-                                HID_KERNEL = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000),
-                                HID_BIAS = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000))
+                                OUT_KERNEL = initializer,
+                                OUT_BIAS = initializer,
+                                HID_KERNEL = initializer,
+                                HID_BIAS = initializer)
 
 
 # %% SAVE (or load) results 
