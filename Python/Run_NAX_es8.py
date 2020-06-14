@@ -141,7 +141,7 @@ strike = 0.0001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
-standard_hyper = False
+standard_hyper = True
 if standard_hyper:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
@@ -249,7 +249,8 @@ BATCH_SIZE = min_hyper_parameters[4] # ??
 
 
 hid_kernel_hyp = hid_weights[0]
-hid_bias_hyp  = hid_weights[1]
+hid_bias_hyp  = hid_weights[-1]
+hid_rec_hyp = hid_weights[1]
 out_kernel_hyp  = out_weights[0]
 out_bias_hyp  = out_weights[1]
 
@@ -303,8 +304,9 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                     LOSS_FUNCTION = MLE_loss,
                     OUT_KERNEL = Constant(out_kernel_hyp ),
                     OUT_BIAS = Constant(out_bias_hyp ),
-                    HID_KERNEL = Constant(hid_kernel_hyp )
-                    # HID_BIAS = Constant(hid_bias_hyp )
+                    HID_KERNEL = Constant(hid_kernel_hyp ),
+                    HID_BIAS = Constant(hid_bias_hyp ),
+                    HID_REC = Constant(hid_rec_hyp)
                     )
 plot_train_history(history,"Loss of model")
 
@@ -356,8 +358,10 @@ set_seed(501)
 
 hid_kernel = hid_kernel_hyp
 hid_bias = hid_bias_hyp
+hid_rec = hid_rec_hyp
 out_kernel = out_kernel_hyp
 out_bias = out_bias_hyp
+
 
 for i in range(5):
 
@@ -410,13 +414,15 @@ for i in range(5):
                         LOSS_FUNCTION = MLE_loss,
                         OUT_KERNEL = Constant(out_kernel ),
                         OUT_BIAS = Constant(out_bias ),
-                        HID_KERNEL = Constant(hid_kernel )
-                        # HID_BIAS = Constant(hid_bias )
+                        HID_KERNEL = Constant(hid_kernel ),
+                        HID_BIAS = Constant(hid_bias ),
+                        HID_REC = Constant(hid_rec)
                         )
 
     hid_weights = model.layers[0].get_weights()
     hid_kernel = hid_weights[0]
-    hid_bias = hid_weights[1]
+    hid_bias = hid_weights[-1]
+    hid_rec = hid_weights[1]
 
     out_weights = model.layers[1].get_weights()
     out_kernel = out_weights[0]
