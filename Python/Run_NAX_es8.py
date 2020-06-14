@@ -230,24 +230,24 @@ min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
 min_RMSE = np.min(all_RMSE,axis=None)
 
 # %%
-if False:
-        k = 50
+if True:
+        k = 191
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
                 
                 ith_value = np.unravel_index(idx[i],all_RMSE.shape)
-                min_hyper_parameters = [LIST_HIDDEN_NEURONS[ith_value[0]],
+                temp_hyper_parameters = [LIST_HIDDEN_NEURONS[ith_value[0]],
                                 LIST_ACT_FUN[ith_value[1]], 
                                 LIST_LEARN_RATE[ith_value[2]], 
                                 LIST_REG_PARAM[ith_value[3]],
                                 LIST_BATCH_SIZE[ith_value[4]]]
                 best_values[i][0]=all_RMSE.flatten()[idx[i]]
-                best_values[i][1:6]=min_hyper_parameters
+                best_values[i][1:6]=temp_hyper_parameters
         best_values = sorted(best_values,key=lambda x: (x[0]))
         col_names = ['RMSE','Hid Neurons','Act Fun', 'Learn Rate', 'Reg Param', 'Batch Size']
         df_best = pd.DataFrame(best_values, columns=col_names)
-        TH=9500
+        TH = 11000
         df_best = df_best[df_best['RMSE']<TH]
 
         for i in range(6):
@@ -268,8 +268,8 @@ BATCH_SIZE = min_hyper_parameters[4] # ??
 
 
 hid_kernel_hyp = hid_weights[0]
-hid_bias_hyp  = hid_weights[-1]
 hid_rec_hyp = hid_weights[1]
+hid_bias_hyp  = hid_weights[2]
 out_kernel_hyp  = out_weights[0]
 out_bias_hyp  = out_weights[1]
 
@@ -328,9 +328,9 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                         # OUT_BIAS = 'zeros',
                         # HID_KERNEL = 'zeros',
                         # HID_BIAS = 'zeros',
-                        OUT_KERNEL = Constant(out_kernel_hyp ),
+                        # OUT_KERNEL = Constant(out_kernel_hyp ),
                         OUT_BIAS = Constant(out_bias_hyp ),
-                        HID_KERNEL = Constant(hid_kernel_hyp ),
+                        # HID_KERNEL = Constant(hid_kernel_hyp ),
                         HID_BIAS = Constant(hid_bias_hyp ),
                         HID_REC = Constant(hid_rec_hyp)
                     )
