@@ -1,4 +1,4 @@
-function regressor(df_std)
+function regressors = regressor(df_std)
 
 
 N_data = length(df_std.years);
@@ -17,9 +17,9 @@ t=( (time_in_days)+time_since_dataset )';
 time = t/max(t); % reparametrization of time
 
 %% COVARIATES
-regressors =[ones(N_data,1),time,...
+regressors =[time,...
     sin(omega*t), cos(omega*t), sin(2*omega*t), cos(2*omega*t),...
-    Sat, Sun, df_std.holiday] 
+    Sat, Sun, df_std.holiday]; 
 
 
 end
