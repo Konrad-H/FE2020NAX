@@ -141,7 +141,6 @@ LIST_LEARN_RATE = [0.1, 0.01, 0.001, 0.0007, 0.0005, 0.0001]     # initial learn
 LIST_REG_PARAM = [0.01, 0.001, 0.0001, 0]     # regularization parameter
 LIST_BATCH_SIZE = [50, 100, 350, 5000]     # batch size, 5000 for no batch
 
-
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365

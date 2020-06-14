@@ -99,7 +99,7 @@ def backtest(y_real, y_pred, confidence_levels, sigma, M, m):
             # exception_vec_t is 0 if y_real_t falls inside the corresponding 95% confidence interval, 1 otherwise
             # needed for Conditional Coverage Likelihood Ratio
             exception_vec = [1]*len(y_real) - ((y_real>=IC_l) & (y_real<=IC_u))
-    
+ 
     # Unconditional Coverage at 95% confidence level
     backtested_95 = backtested_levels[5]
     exceptions = N - backtested_95

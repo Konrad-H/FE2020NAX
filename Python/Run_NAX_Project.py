@@ -93,20 +93,39 @@ residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 #plt.show()
 
 # %%
-# Plot autocorrelation and partial autocorrelation of the residuals
-# from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
-# residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
+residuals = dataset.std_demand[end_pos:val_pos] - y_GLM_val # model residuals
+residuals = pd.Series(residuals)
+
+x_axis = range(end_pos, val_pos)
+
+dataset_plt = dataset[end_pos:val_pos+1]
+ 
+plt.figure()
+plt.plot(residuals.index, residuals.values, '.')
+plt.xticks(np.array([dataset_plt[dataset_plt.date=='2011-01-01'].index, dataset_plt[dataset_plt.date=='2011-03-01'].index, 
+            dataset_plt[dataset_plt.date=='2011-05-01'].index, dataset_plt[dataset_plt.date=='2011-07-01'].index,
+            dataset_plt[dataset_plt.date=='2011-09-01'].index, dataset_plt[dataset_plt.date=='2011-11-01'].index,
+            dataset_plt[dataset_plt.date=='2012-01-01'].index]),
+            ['2011-01', '2011-03', '2011-05', '2011-07', '2011-09', '2011-11', '2012-01'])
+plt.show()
+
+
+# %%
+# Plot autocorrelation and partial autocorrelation of the residuals
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+
+residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
 
 # Autocorrelation
-# plot_acf(residuals_plt, lags = range(0,51), alpha = None)
-# plt.xlabel('Days')
-# plt.show()
+plot_acf(residuals_plt, lags = range(0,51), alpha = None)
+plt.xlabel('Days')
+plt.show()
 
 # Partial Autocorrelation
-# plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
-# plt.xlabel('Days')
-# plt.show()
+plot_pacf(residuals_plt, lags = range(0,51), alpha = None, title = None)
+plt.xlabel('Days')
+plt.show()
 
 # %% NAX Model
 # Needed data stored in a DataFrame
@@ -388,7 +407,7 @@ for i in range(5):
     sigma_NAX = np.sqrt(y2var(y_pred))
     sigma_NAX = sigma_NAX[:,0]
     y_NAX_test = y_GLM_test[1:] + mu_NAX
-
+    
     # 95% Confidence Interval Plot
     y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
 
