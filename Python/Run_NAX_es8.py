@@ -141,7 +141,7 @@ strike = 0.0001
 my_loss = loss_strike(strike)
 
 # Possible values of hyper-parameters
-standard_hyper = False
+standard_hyper = True
 if standard_hyper:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
@@ -170,7 +170,7 @@ VERBOSE_EARLY = 1
 seed = 252
 set_seed(seed)
 from tensorflow.keras import initializers
-initializer = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000)
+initializer = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LOSS_FUNCTION = my_loss,
                                 MAX_EPOCHS = MAX_EPOCHS,
@@ -181,7 +181,11 @@ all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LIST_BATCH_SIZE = LIST_BATCH_SIZE,
                                 LIST_REG_PARAM = LIST_REG_PARAM,
                                 VERBOSE = VERBOSE,
-                                VERBOSE_EARLY = VERBOSE_EARLY)
+                                VERBOSE_EARLY = VERBOSE_EARLY,
+                                OUT_KERNEL = initializer,
+                                OUT_BIAS = initializer,
+                                HID_KERNEL = initializer,
+                                HID_BIAS = initializer)
 
 
 # %% SAVE (or load) results 
