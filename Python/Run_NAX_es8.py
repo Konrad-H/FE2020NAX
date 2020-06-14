@@ -133,21 +133,37 @@ df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 # %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
 from hyper_param_f import find_hyperparam
 from MLE_loss import loss_strike
-
+from tensorflow.keras import initializers
 MAX_EPOCHS = 500
 STOPPATIENCE = 50
 
 strike = 0.0001
-my_loss = loss_strike(strike)
+my_loss,y2var = loss_strike(strike)
+
+
+START_SPLIT = 0
+TRAIN_SPLIT = 1095
+VAL_SPLIT = 1095+365
+
+VERBOSE = 1
+VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-standard_hyper = True
-if standard_hyper:
+run_mode = 1#1 standard 2 simplified 3 extended
+if run_mode==1:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
-        LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
+        LIST_LEARN_RATE = [0.001, 0.003, 0.01, 0.1]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0, 0.0001, 0.001]     # regularization parameter
         LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
+
+elif  run_mode==2:
+        LIST_HIDDEN_NEURONS = [[3]]  
+        LIST_ACT_FUN = ['softmax']   # activation function
+        LIST_LEARN_RATE = [0.003]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0.0001]     # regularization parameter
+        LIST_BATCH_SIZE = [25, 50, 75, 100]     # batch size, 5000 for no batch
+
 else:
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
@@ -159,52 +175,50 @@ else:
         LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
         LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
 
-START_SPLIT = 0
-TRAIN_SPLIT = 1095
-VAL_SPLIT = 1095+365
-
-VERBOSE = 1
-VERBOSE_EARLY = 1
 
 # %%
-seed = 252
+# Hyperparam run
+seed = 452
 set_seed(seed)
-from tensorflow.keras import initializers
-initializer = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
-all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
-                                LOSS_FUNCTION = my_loss,
-                                MAX_EPOCHS = MAX_EPOCHS,
-                                STOPPATIENCE = STOPPATIENCE,
-                                LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-                                LIST_ACT_FUN = LIST_ACT_FUN,
-                                LIST_LEARN_RATE = LIST_LEARN_RATE,
-                                LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-                                LIST_REG_PARAM = LIST_REG_PARAM,
-                                VERBOSE = VERBOSE,
-                                VERBOSE_EARLY = VERBOSE_EARLY,
-                                OUT_KERNEL = initializer,
-                                OUT_BIAS = initializer,
-                                HID_KERNEL = initializer,
-                                HID_BIAS = initializer)
-
-
-# %% SAVE (or load) results 
-
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-# saving
-hid_weights = model.layers[0].get_weights()
-out_weights = model.layers[1].get_weights()
-array = np.array([all_RMSE,hid_weights,out_weights ])
-np.save(name+'.npy', array)
+live_run = True
+save = True
+if live_run:
+        hid_ker_init = 'zeros' #'glorot_uniform' 
+        out_ker_init= 'zeros'
+        # hid_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
+        hid_bias_init= 'zeros'
+        out_bias_init= initializers.Constant([0,0.1]) #'zeros'
+        # out_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
+        all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                                        LOSS_FUNCTION = my_loss,
+                                        Y2VAR = y2var,
+                                        MAX_EPOCHS = MAX_EPOCHS,
+                                        STOPPATIENCE = STOPPATIENCE,
+                                        LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                        LIST_ACT_FUN = LIST_ACT_FUN,
+                                        LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                        LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                        LIST_REG_PARAM = LIST_REG_PARAM,
+                                        VERBOSE = VERBOSE,
+                                        VERBOSE_EARLY = VERBOSE_EARLY,
+                                        OUT_KERNEL = out_ker_init,
+                                        OUT_BIAS = out_bias_init,
+                                        HID_KERNEL = hid_ker_init,
+                                        HID_BIAS = hid_ker_init)
+        hid_weights = model.layers[0].get_weights()
+        out_weights = model.layers[1].get_weights()
+        if save:
+                array = np.array([all_RMSE,hid_weights,out_weights ])
+                np.save(name+'.npy', array)
+else:
+        data = np.load(name+'.npy', allow_pickle=True)
+        all_RMSE = data[0]
+        hid_weights = data[1]
+        out_weights = data[2]
 
-# # loading
-# data = np.load(name+'.npy', allow_pickle=True)
-# all_RMSE = data[0]
-# hid_weights = data[1]
-# out_weights = data[2]
-
-
+# %% 
 # summary
 plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
@@ -216,31 +230,32 @@ min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
 min_RMSE = np.min(all_RMSE,axis=None)
 
 # %%
-k = 50
-idx = np.argpartition(all_RMSE.flatten(), k)
-best_values = np.zeros((k,5)).tolist()
-for i in range(k):
-        
-        ith_value = np.unravel_index(idx[i],all_RMSE.shape)
-        min_hyper_parameters = [LIST_HIDDEN_NEURONS[ith_value[0]],
-                        LIST_ACT_FUN[ith_value[1]], 
-                        LIST_LEARN_RATE[ith_value[2]], 
-                        LIST_REG_PARAM[ith_value[3]],
-                        LIST_BATCH_SIZE[ith_value[4]]]
-        best_values[i][0]=all_RMSE.flatten()[idx[i]]
-        best_values[i][1:6]=min_hyper_parameters
-best_values = sorted(best_values,key=lambda x: (x[0]))
-col_names = ['RMSE','Hid Neurons','Act Fun', 'Learn Rate', 'Reg Param', 'Batch Size']
-df_best = pd.DataFrame(best_values, columns=col_names)
-TH=9500
-df_best = df_best[df_best['RMSE']<TH]
+if False:
+        k = 50
+        idx = np.argpartition(all_RMSE.flatten(), k)
+        best_values = np.zeros((k,5)).tolist()
+        for i in range(k):
+                
+                ith_value = np.unravel_index(idx[i],all_RMSE.shape)
+                min_hyper_parameters = [LIST_HIDDEN_NEURONS[ith_value[0]],
+                                LIST_ACT_FUN[ith_value[1]], 
+                                LIST_LEARN_RATE[ith_value[2]], 
+                                LIST_REG_PARAM[ith_value[3]],
+                                LIST_BATCH_SIZE[ith_value[4]]]
+                best_values[i][0]=all_RMSE.flatten()[idx[i]]
+                best_values[i][1:6]=min_hyper_parameters
+        best_values = sorted(best_values,key=lambda x: (x[0]))
+        col_names = ['RMSE','Hid Neurons','Act Fun', 'Learn Rate', 'Reg Param', 'Batch Size']
+        df_best = pd.DataFrame(best_values, columns=col_names)
+        TH=9500
+        df_best = df_best[df_best['RMSE']<TH]
 
-for i in range(6):
-        plt.subplot(2, 3, 1+i)
-        if i==0:
-                plt.hist(df_best[col_names[i]])
-        else:
-                df_best[col_names[i]].value_counts().plot(kind='bar')
+        for i in range(6):
+                plt.subplot(2, 3, 1+i)
+                if i==0:
+                        plt.hist(df_best[col_names[i]])
+                else:
+                        df_best[col_names[i]].value_counts().plot(kind='bar')
 
 
 # %% Choose Hyperparameters
@@ -287,7 +302,8 @@ from NAX_f import one_NAX_iteration, plot_train_history
 from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
 
-set_seed(seed)
+# set_seed(seed)
+
 MLE_loss, y2var = loss_strike(strike)
 
 MAX_EPOCHS = 600 
@@ -295,28 +311,36 @@ STOPPATIENCE = 50
 VERBOSE = 1
 VERBOSE_EARLY = 1
 
+kernel_init  = 'glorot_uniform'
+
 y_pred,history,model = one_NAX_iteration(dataset_NAX,
-                    BATCH_SIZE = BATCH_SIZE,
-                    EPOCHS = MAX_EPOCHS,
-                    REG_PARAM = REG_PARAM,
-                    ACT_FUN = ACT_FUN,
-                    LEARN_RATE = LEARN_RATE,
-                    HIDDEN_NEURONS=HIDDEN_NEURONS ,
-                    STOPPATIENCE = STOPPATIENCE,
-                    VERBOSE= VERBOSE,
-                    VERBOSE_EARLY = VERBOSE_EARLY,
-                    LOSS_FUNCTION = MLE_loss,
-                    OUT_KERNEL = Constant(out_kernel_hyp ),
-                    OUT_BIAS = Constant(out_bias_hyp ),
-                    HID_KERNEL = Constant(hid_kernel_hyp ),
-                    HID_BIAS = Constant(hid_bias_hyp ),
-                    HID_REC = Constant(hid_rec_hyp)
+                        BATCH_SIZE = BATCH_SIZE,
+                        EPOCHS = MAX_EPOCHS,
+                        REG_PARAM = REG_PARAM,
+                        ACT_FUN = ACT_FUN,
+                        LEARN_RATE = LEARN_RATE,
+                        HIDDEN_NEURONS=HIDDEN_NEURONS ,
+                        STOPPATIENCE = STOPPATIENCE,
+                        VERBOSE= VERBOSE,
+                        VERBOSE_EARLY = VERBOSE_EARLY,
+                        LOSS_FUNCTION = MLE_loss,
+                        # OUT_KERNEL = kernel_init,
+                        # OUT_BIAS = 'zeros',
+                        # HID_KERNEL = 'zeros',
+                        # HID_BIAS = 'zeros',
+                        OUT_KERNEL = Constant(out_kernel_hyp ),
+                        OUT_BIAS = Constant(out_bias_hyp ),
+                        HID_KERNEL = Constant(hid_kernel_hyp ),
+                        HID_BIAS = Constant(hid_bias_hyp ),
+                        HID_REC = Constant(hid_rec_hyp)
                     )
 plot_train_history(history,"Loss of model")
 
 mu_NAX = y_pred[:,0]
 sigma_NAX = np.sqrt(y2var(y_pred))
 sigma_NAX = sigma_NAX[:,0]
+print('MAX sigma: ', max(sigma_NAX))
+print('MIN sigma: ', min(sigma_NAX))
 
 # %% Confidence interval
 from evaluation_functions import ConfidenceInterval

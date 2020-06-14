@@ -99,12 +99,13 @@ dataset_NAX.residuals = residuals;
 % Hyperparameters
 LIST_HIDDEN_NEURONS = [3, 4, 5, 6];
 LIST_ACT_FUN = ["softmax"; "logsig"];
-% LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
+LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
 % LIST_BATCH_SIZE = [50,5000];
 LIST_REG_PARAM = [0.001, 0.0001, 0];
  
-[hidden_neurons, act_fun, reg_param, min_RMSE, all_RMSE] = find_hyperparam(dataset_NAX, ...
-    LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_REG_PARAM, M, m, start_date, end_date, val_date);
+[hidden_neurons, act_fun, reg_param, min_RMSE, all_RMSE] = ...
+    find_hyperparam(dataset_NAX, "mse",...
+    LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM, M, m, start_date, end_date, val_date);
 
 hidden_neurons
 act_fun

@@ -1,5 +1,5 @@
 function [hidden_neurons, act_fun, reg_param, min_RMSE, all_RMSE] = find_hyperparam ...
-(dataset, list_hidden_neurons, list_act_fun, list_reg_param, M, m, first_year, last_year, test_year)
+(dataset, loss_f, list_hidden_neurons, list_act_fun, list_lrn_rate,list_reg_param, M, m, first_year, last_year, test_year)
 
 %
 % INPUTS:
@@ -31,28 +31,34 @@ y_GLM = dataset.std_demand(lasty_pos+1:testy_pos) - dataset.residuals(lasty_pos+
 
 L1 = length(list_hidden_neurons);
 L2 = length(list_act_fun);
-L3 = length(list_reg_param);
-all_RMSE = zeros(L1, L2, L3);
+L3 = length(list_lrn_rate);
+L4 = length(list_reg_param);
+all_RMSE = zeros(L1, L2, L3,L4);
 
 % for loop to try all possible combinations
 for n1 = [1:L1]
-    for n2 = [1:L2]
-        for n3 = [1:L3]
-            [mu_NAX, ~] = NAX(dataset, list_hidden_neurons(n1), list_act_fun(n2,:), list_reg_param(n3), first_year, last_year, test_year, 0); % predicted residuals
-            y_NAX = y_GLM' + mu_NAX; % demand predicted by the neural network
-            RMSE = rmse(y, destd(y_NAX',M,m));
-            all_RMSE(n1, n2, n3) = RMSE;
+    for n2 =[1:L2] 
+        for n3 =[1:L3] 
+            for n4 = [1:L4]
+                [mu_NAX, ~] = NAX(dataset, loss_f, list_hidden_neurons(n1), ...
+                    list_act_fun(n2,:), list_lrn_rate(n3),list_reg_param(n4),...
+                    first_year, last_year, test_year, 0); % predicted residuals
+                y_NAX = y_GLM' + mu_NAX; % demand predicted by the neural network
+                RMSE = rmse(y, destd(y_NAX',M,m));
+                all_RMSE(n1, n2, n3 ,n4) = RMSE;
+            end
         end
     end
 end
 
 % Find the minimum RMSE and relative optimal parameters
 [~, idx] = min(all_RMSE(:));            
-[n1, n2, n3] = ind2sub(size(all_RMSE),idx)
-min_RMSE = all_RMSE(n1,n2,n3);
+[n1, n2, n3,n4] = ind2sub(size(all_RMSE),idx)
+min_RMSE = all_RMSE(n1,n2,n3,n4);
 hidden_neurons = list_hidden_neurons(n1);
 act_fun = list_act_fun(n2,:);
-reg_param = list_reg_param(n3);
+lrn_rate = list_lrn_rate(n3);
+reg_param = list_reg_param(n4);
 
 end
 
