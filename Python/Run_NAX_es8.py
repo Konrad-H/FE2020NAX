@@ -178,11 +178,11 @@ else:
 
 # %%
 # Hyperparam run
-seed = 452
+seed = 14
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = False
+live_run = True
 save = True
 if live_run:
         hid_ker_init = 'glorot_uniform' #'glorot_uniform' 
@@ -268,6 +268,7 @@ else:
 # %% 
 # summary
 plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
+plt.xlabel('RMSE')
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
