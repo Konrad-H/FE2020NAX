@@ -149,7 +149,8 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-run_mode = 1#1 standard 2 simplified 3 extended
+run_mode = 1 #1 standard 2 simplified 3 extended
+
 if run_mode==1:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
@@ -162,13 +163,12 @@ elif  run_mode==2:
         LIST_ACT_FUN = ['softmax']   # activation function
         LIST_LEARN_RATE = [0.003]     # initial learning rate (for Keras ADAM)
         LIST_REG_PARAM = [0.0001]     # regularization parameter
-        LIST_BATCH_SIZE = [25, 50, 75, 100]     # batch size, 5000 for no batch
+        LIST_BATCH_SIZE = [25, 50, 100]     # batch size, 5000 for no batch
 
 else:
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
         MULTI_LAYER_HIDDEN = [[3,3],[3,3,3],[3,10],[10,3]]
-        COMBINATIONS = MULTI_LAYER_HIDDEN
         LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN   # number of neurons (hidden layer)
         LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']   # activation function
         LIST_LEARN_RATE = [0.0001, 0.001, 0.01, 0.1]     # initial learning rate (for Keras ADAM)
@@ -185,38 +185,85 @@ name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 live_run = False
 save = True
 if live_run:
-        hid_ker_init = 'zeros' #'glorot_uniform' 
-        out_ker_init= 'zeros'
+        hid_ker_init = 'glorot_uniform' #'glorot_uniform' 
+        out_ker_init= 'glorot_uniform'
         # hid_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
         hid_bias_init= 'zeros'
         out_bias_init= initializers.Constant([0,0.1]) #'zeros'
         # out_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
-        all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
-                                        LOSS_FUNCTION = my_loss,
-                                        Y2VAR = y2var,
-                                        MAX_EPOCHS = MAX_EPOCHS,
-                                        STOPPATIENCE = STOPPATIENCE,
-                                        LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-                                        LIST_ACT_FUN = LIST_ACT_FUN,
-                                        LIST_LEARN_RATE = LIST_LEARN_RATE,
-                                        LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-                                        LIST_REG_PARAM = LIST_REG_PARAM,
-                                        VERBOSE = VERBOSE,
-                                        VERBOSE_EARLY = VERBOSE_EARLY,
-                                        OUT_KERNEL = out_ker_init,
-                                        OUT_BIAS = out_bias_init,
-                                        HID_KERNEL = hid_ker_init,
-                                        HID_BIAS = hid_ker_init)
-        hid_weights = model.layers[0].get_weights()
-        out_weights = model.layers[1].get_weights()
-        if save:
-                array = np.array([all_RMSE,hid_weights,out_weights ])
-                np.save(name+'.npy', array)
+        if run_mode==1 or run_mode==2:
+                
+                all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                                                LOSS_FUNCTION = my_loss,
+                                                Y2VAR = y2var,
+                                                MAX_EPOCHS = MAX_EPOCHS,
+                                                STOPPATIENCE = STOPPATIENCE,
+                                                LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                                LIST_ACT_FUN = LIST_ACT_FUN,
+                                                LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                                LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                                LIST_REG_PARAM = LIST_REG_PARAM,
+                                                VERBOSE = VERBOSE,
+                                                VERBOSE_EARLY = VERBOSE_EARLY,
+                                                OUT_KERNEL = out_ker_init,
+                                                OUT_BIAS = out_bias_init,
+                                                HID_KERNEL = hid_ker_init,
+                                                HID_BIAS = hid_ker_init)
+                hid_weights = model.layers[0].get_weights()
+                out_weights = model.layers[1].get_weights()
+                if save:
+                        array = np.array([all_RMSE,hid_weights,out_weights ])
+                        np.save(name+'.npy', array)
+        elif run_mode==3:
+                for layer_n in LIST_HIDDEN_NEURONS:
+                        all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                                                        LOSS_FUNCTION = my_loss,
+                                                        Y2VAR = y2var,
+                                                        MAX_EPOCHS = MAX_EPOCHS,
+                                                        STOPPATIENCE = STOPPATIENCE,
+                                                        LIST_HIDDEN_NEURONS = [layer_n],
+                                                        LIST_ACT_FUN = LIST_ACT_FUN,
+                                                        LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                                        LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                                        LIST_REG_PARAM = LIST_REG_PARAM,
+                                                        VERBOSE = VERBOSE,
+                                                        VERBOSE_EARLY = VERBOSE_EARLY,
+                                                        OUT_KERNEL = out_ker_init,
+                                                        OUT_BIAS = out_bias_init,
+                                                        HID_KERNEL = hid_ker_init,
+                                                        HID_BIAS = hid_ker_init)
+                        weights = []
+                        hid_weights = model.layers[0].get_weights()
+                        out_weights = model.layers[-1].get_weights()                
+                        for i in range(len(layer_n)+1):
+                                weights.append(model.layers[i].get_weights())
+
+                        if save:
+                                
+                                name = 'Results/RMSE'+str(run_mode)+'neur'+str(layer_n)+''+str(seed)
+                                array = np.array([all_RMSE,weights ])
+                                np.save(name+'.npy', array)
+
 else:
-        data = np.load(name+'.npy', allow_pickle=True)
-        all_RMSE = data[0]
-        hid_weights = data[1]
-        out_weights = data[2]
+        if run_mode==1 or run_mode==2:
+                data = np.load(name+'.npy', allow_pickle=True)
+                all_RMSE = data[0]
+                hid_weights = data[1]
+                out_weights = data[2]
+        if run_mode==3:
+                all_data = []
+                for layer_n in LIST_HIDDEN_NEURONS:
+                        name = 'Results/RMSE'+str(run_mode)+'neur'+str(layer_n)+''+str(seed)
+                        data = np.load(name+'.npy', allow_pickle=True)
+                        all_data.append(data)
+                all_RMSE = []
+                all_weights=[]
+                for i in range(len(all_data)):
+                        all_RMSE+=[all_data[i][0][0]]
+                        all_weights+=[all_data[i][1]]
+                all_RMSE = np.array(all_RMSE)
+
+
 
 # %% 
 # summary
@@ -228,10 +275,11 @@ min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_REG_PARAM[argmin[3]],
                         LIST_BATCH_SIZE[argmin[4]]]
 min_RMSE = np.min(all_RMSE,axis=None)
+print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
 if True:
-        k = 191
+        k = 60
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
@@ -324,13 +372,9 @@ y_pred,history,model = one_NAX_iteration(dataset_NAX,
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
                         LOSS_FUNCTION = MLE_loss,
-                        # OUT_KERNEL = kernel_init,
-                        # OUT_BIAS = 'zeros',
-                        # HID_KERNEL = 'zeros',
-                        # HID_BIAS = 'zeros',
-                        # OUT_KERNEL = Constant(out_kernel_hyp ),
+                        OUT_KERNEL = Constant(out_kernel_hyp ),
                         OUT_BIAS = Constant(out_bias_hyp ),
-                        # HID_KERNEL = Constant(hid_kernel_hyp ),
+                        HID_KERNEL = Constant(hid_kernel_hyp ),
                         HID_BIAS = Constant(hid_bias_hyp ),
                         HID_REC = Constant(hid_rec_hyp)
                     )
