@@ -182,7 +182,7 @@ seed = 452
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = True
+live_run = False
 save = True
 if live_run:
         hid_ker_init = 'zeros' #'glorot_uniform' 
