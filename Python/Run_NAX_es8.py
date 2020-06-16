@@ -376,7 +376,7 @@ out_bias_hyp  = out_weights[1]
 # HYPER PARAMETERS READY
 # %% ex. 5
 #
-start_date = 2008
+start_date = 2009
 end_date   = start_date+2
 test_date  = start_date+3
 start_pos = (start_date -2008)*365
