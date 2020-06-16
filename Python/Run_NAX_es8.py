@@ -149,23 +149,23 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-run_mode = 1 #1 standard 2 simplified 3 extended
+hyper_grid = 1 #1 standard 2 simplified 3 extended
 
-if run_mode==1:
+if hyper_grid==1:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
-        LIST_LEARN_RATE = [0.001, 0.003, 0.01, 0.1]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0, 0.0001, 0.001]     # regularization parameter
+        LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
         LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
-elif  run_mode==2:
+elif  hyper_grid==2:
         LIST_HIDDEN_NEURONS = [[3]]  
-        LIST_ACT_FUN = ['softmax']   # activation function
-        LIST_LEARN_RATE = [0.003]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0.0001]     # regularization parameter
-        LIST_BATCH_SIZE = [25, 50, 100]     # batch size, 5000 for no batch
+        LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
+        LIST_LEARN_RATE = [0.001]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0.001]     # regularization parameter
+        LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
-else:
+elif hyper_grid==3:
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
         MULTI_LAYER_HIDDEN = [[3,3],[3,3,3],[3,10],[10,3]]
@@ -175,6 +175,24 @@ else:
         LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
         LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
 
+elif hyper_grid==4:
+        BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
+        BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
+        MULTI_LAYER_HIDDEN = [[3,3],[3,3,3], [3,4],[5,4,3]]
+        LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN   # number of neurons (hidden layer)
+        LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']   # activation function
+        LIST_LEARN_RATE = [0.0001, 0.001, 0.003, 0.01, 0.03, 0.1]     # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0, 0.0001, 0.0003, 0.01, 0.001]    # regularization parameter
+        LIST_BATCH_SIZE = [25, 50, 100, 500, 5000]     # batch size, 5000 for no batch
+
+piece_run = False
+K = 4
+N = len(LIST_HIDDEN_NEURONS)
+
+if piece_run:
+        i= int(input('This run is very big, choose a partition between 1 and '+str(K)+':'))
+        LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[((i-1)*N//K):(i*N//K)]
+
 
 # %%
 # Hyperparam run
@@ -183,15 +201,16 @@ set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
 live_run = True
-save = True
+save = False
 if live_run:
         hid_ker_init = 'glorot_uniform' #'glorot_uniform' 
         out_ker_init= 'glorot_uniform'
         # hid_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
         hid_bias_init= 'zeros'
-        out_bias_init= initializers.Constant([0,0.1]) #'zeros'
+        out_bias_init= initializers.Constant([0,0.1])
+        out_bias_init = 'zeros' #'zeros'
         # out_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
-        if run_mode==1 or run_mode==2:
+        if hyper_grid==1 or hyper_grid==2:
                 
                 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                                 LOSS_FUNCTION = my_loss,
@@ -214,7 +233,7 @@ if live_run:
                 if save:
                         array = np.array([all_RMSE,hid_weights,out_weights ])
                         np.save(name+'.npy', array)
-        elif run_mode==3:
+        elif hyper_grid==3 or hyper_grid==4:
                 for layer_n in LIST_HIDDEN_NEURONS:
                         all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                                         LOSS_FUNCTION = my_loss,
@@ -240,20 +259,20 @@ if live_run:
 
                         if save:
                                 
-                                name = 'Results/RMSE'+str(run_mode)+'neur'+str(layer_n)+''+str(seed)
+                                name = 'Results/RMSE_grid'+str(hyper_grid)+'neur'+str(layer_n)+'seed'+str(seed)
                                 array = np.array([all_RMSE,weights ])
                                 np.save(name+'.npy', array)
 
 else:
-        if run_mode==1 or run_mode==2:
+        if hyper_grid==1 or hyper_grid==2:
                 data = np.load(name+'.npy', allow_pickle=True)
                 all_RMSE = data[0]
                 hid_weights = data[1]
                 out_weights = data[2]
-        if run_mode==3:
+        if hyper_grid==3:
                 all_data = []
                 for layer_n in LIST_HIDDEN_NEURONS:
-                        name = 'Results/RMSE'+str(run_mode)+'neur'+str(layer_n)+''+str(seed)
+                        name = 'Results/RMSE'+str(hyper_grid)+'neur'+str(layer_n)+''+str(seed)
                         data = np.load(name+'.npy', allow_pickle=True)
                         all_data.append(data)
                 all_RMSE = []
@@ -298,14 +317,14 @@ if True:
         df_best = pd.DataFrame(best_values, columns=col_names)
         TH = 11000
         df_best = df_best[df_best['RMSE']<TH]
-
+        plt.figure()
         for i in range(6):
                 plt.subplot(2, 3, 1+i)
                 if i==0:
-                        plt.hist(df_best[col_names[i]])
+                        plt.hist(df_best[col_names[i]]/1000)
                 else:
                         df_best[col_names[i]].value_counts().plot(kind='bar')
-
+        plt.show()
 
 # %% Choose Hyperparameters
 

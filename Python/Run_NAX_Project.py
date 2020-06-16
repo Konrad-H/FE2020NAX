@@ -151,7 +151,7 @@ MAX_EPOCHS = 500
 STOPPATIENCE = 50
 
 strike = 0.0001
-my_loss = loss_strike(strike)
+my_loss,y2var = loss_strike(strike)
 
 # Possible values of hyper-parameters
 LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
@@ -171,10 +171,10 @@ VERBOSE_EARLY = 1
 # %%
  # 501 used for zeros initialization
  # 108 used for normal (0,.001)
-seed = 108
+seed = 14
 set_seed(seed)
-from tensorflow.keras import initializers
-initializer = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000)
+# from tensorflow.keras import initializers
+# initializer = initializers.RandomUniform(minval=-2/1000, maxval=-2/1000)
 # initializer = 'zeros'
 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LOSS_FUNCTION = my_loss,
@@ -186,11 +186,12 @@ all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                 LIST_BATCH_SIZE = LIST_BATCH_SIZE,
                                 LIST_REG_PARAM = LIST_REG_PARAM,
                                 VERBOSE = VERBOSE,
-                                VERBOSE_EARLY = VERBOSE_EARLY,
-                                OUT_KERNEL = initializer,
-                                OUT_BIAS = initializer,
-                                HID_KERNEL = initializer,
-                                HID_BIAS = initializer)
+                                VERBOSE_EARLY = VERBOSE_EARLY
+                                # OUT_KERNEL = initializer,
+                                # OUT_BIAS = initializer,
+                                # HID_KERNEL = initializer,
+                                # HID_BIAS = initializer
+                                )
 
 
 # %% SAVE (or load) results 
