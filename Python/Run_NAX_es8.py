@@ -149,12 +149,12 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-hyper_grid = 1 #1 standard 2 simplified 3 extended
+hyper_grid =int(input('What grid style?  - 1 standard; 2 simplifie; 3 extended; 4 extendend 2.0')) 
 
 if hyper_grid==1:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
-        LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001]     # initial learning rate (for Keras ADAM)
+        LIST_LEARN_RATE = [  0.001, 0.003,0.01,0.1]     # initial learning rate (for Keras ADAM)
         LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
         LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
@@ -194,21 +194,22 @@ if piece_run:
         LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[((i-1)*N//K):(i*N//K)]
 
 
-# %%
+
 # Hyperparam run
-seed = 14
+seed = 452 #301
+seed = int(input('What seed?'))
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = True
+live_run = False
 save = False
 if live_run:
-        hid_ker_init = 'glorot_uniform' #'glorot_uniform' 
-        out_ker_init= 'glorot_uniform'
+        hid_ker_init = 'zeros' #'glorot_uniform' 
+        out_ker_init= 'zeros'
         # hid_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
         hid_bias_init= 'zeros'
         out_bias_init= initializers.Constant([0,0.1])
-        out_bias_init = 'zeros' #'zeros'
+        #out_bias_init = 'zeros' #'zeros'
         # out_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
         if hyper_grid==1 or hyper_grid==2:
                 
@@ -281,8 +282,8 @@ else:
                         all_RMSE+=[all_data[i][0][0]]
                         all_weights+=[all_data[i][1]]
                 all_RMSE = np.array(all_RMSE)
-                # hid_weights = all_weights[2][0]
-                # out_weights = all_weights[2][1]
+                hid_weights = all_weights[2][0]
+                out_weights = all_weights[2][1]
 
 
 
@@ -596,6 +597,9 @@ for i in range(5):
     plt.ylabel('Backtested Level')
     plt.show()
 
+
+    print('MAX sigma: ', max(sigma_NAX))
+    print('MIN sigma: ', min(sigma_NAX))
     # GLM errors
     print('RMSE_GLM')
     RMSE_GLM=rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m))
@@ -617,9 +621,17 @@ for i in range(5):
     print('MAPE_ARX')
     MAPE_ARX=mape(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m))
     print(MAPE_ARX)
+    
+    APL_GLM = sum(pinball_values_GLM)/len(pinball_values_GLM)
+    APL_NAX = sum(pinball_values_NAX)/len(pinball_values_NAX)
+    APL_ARX = sum(pinball_values_ARX)/len(pinball_values_ARX)
+
 
     RMSE_year = ['RMSE',test_date,RMSE_GLM, RMSE_ARX, RMSE_NAX] 
     MAPE_year = ['MAPE',test_date, MAPE_GLM,MAPE_ARX, MAPE_NAX]
+    APL_year = ['APL',test_date, APL_GLM,APL_ARX, APL_NAX]
+    LRU_year = ['LRU',test_date, LR_Unc_GLM,LR_Unc_ARX, LR_Unc_NAX]
+    LRC_year = ['LRC',test_date, LR_Cov_GLM,LR_Cov_ARX, LR_Cov_NAX]
     print('LR_GLM')
     print(LR_Unc_GLM, LR_Cov_GLM)
     print('LR_NAX')
@@ -628,6 +640,11 @@ for i in range(5):
     print(LR_Unc_ARX, LR_Cov_ARX)
     results.append(RMSE_year)
     results.append(MAPE_year)
+    results.append(APL_year)
+    results.append(LRU_year)
+    results.append(LRC_year)
+ES8_esults = pd.DataFrame(results, columns=table_col)
+
 
 
 
