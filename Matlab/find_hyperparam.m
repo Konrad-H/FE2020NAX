@@ -43,9 +43,13 @@ for n1 = [1:L1]
                 [mu_NAX, ~] = NAX(dataset, loss_f, list_hidden_neurons(n1), ...
                     list_act_fun(n2,:), list_lrn_rate(n3),list_reg_param(n4),...
                     first_year, last_year, test_year, 0); % predicted residuals
-                y_NAX = y_GLM' + mu_NAX; % demand predicted by the neural network
+                % demand predicted by the neural network
+                if loss_f=='mll'
+                    mu_NAX = mu_NAX(:,1);
+                end
+                y_NAX = y_GLM' + mu_NAX; 
                 RMSE = rmse(y, destd(y_NAX',M,m));
-                all_RMSE(n1, n2, n3 ,n4) = RMSE;
+
             end
         end
     end
