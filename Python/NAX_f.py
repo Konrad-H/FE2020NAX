@@ -10,8 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from pandas import Series
-
-from MLE_loss import custom_loss
+from MLE_loss import loss_strike
 from tensorflow.keras.callbacks import EarlyStopping
 from standard_and_error_functions import destd
 
@@ -33,7 +32,7 @@ REG_PARAM = 0.0001  # L1 normalization parameter
 ACT_FUN = 'softmax' # 'sigmoid' 'softmax'
 LEARN_RATE = 0.003  # learn rate of ADAM function
 HIDDEN_NEURONS = 3  # as written
-LOSS_FUNCTION =  custom_loss  # as written
+LOSS_FUNCTION, _ =  loss_strike(.0001) # as written
 OUTPUT_NEURONS= 2             # as written
 OUT_KERNEL = 'glorot_uniform'     # weights for the Kernel Init
 OUT_BIAS = 'zeros'            # weights for the BIAS Init
@@ -150,7 +149,7 @@ def NAX_model(INPUT_SHAPE=(2,10),
             LEARN_RATE = 0.003,
             HIDDEN_NEURONS = [3] ,
             OUTPUT_NEURONS = 2,
-            LOSS_FUNCTION = custom_loss,
+            LOSS_FUNCTION = 'mse',
             OUT_KERNEL = 'glorot_uniform'    ,
             OUT_BIAS = 'zeros',
             HID_KERNEL = 'glorot_uniform'    ,
@@ -256,7 +255,7 @@ def one_NAX_iteration(df,START_SPLIT = 0,
                 ACT_FUN = 'softmax',
                 LEARN_RATE = 0.003,
                 HIDDEN_NEURONS = 3 ,
-                LOSS_FUNCTION = custom_loss,
+                LOSS_FUNCTION = 'mse',
                 OUTPUT_NEURONS= 2,
                 STOPPATIENCE = 50,
                 past_history = 1,
