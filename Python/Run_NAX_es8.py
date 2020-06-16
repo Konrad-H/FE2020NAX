@@ -149,7 +149,7 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-hyper_grid = 1 #1 standard 2 simplified 3 extended
+hyper_grid = 3 #1 standard 2 simplified 3 extended
 
 if hyper_grid==1:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
@@ -196,11 +196,11 @@ if piece_run:
 
 # %%
 # Hyperparam run
-seed = 14
+seed = 301
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = True
+live_run = False
 save = False
 if live_run:
         hid_ker_init = 'glorot_uniform' #'glorot_uniform' 
@@ -269,7 +269,7 @@ else:
                 all_RMSE = data[0]
                 hid_weights = data[1]
                 out_weights = data[2]
-        if hyper_grid==3:
+        elif hyper_grid==3 or hyper_grid==4:
                 all_data = []
                 for layer_n in LIST_HIDDEN_NEURONS:
                         name = 'Results/RMSE'+str(hyper_grid)+'neur'+str(layer_n)+''+str(seed)
@@ -288,6 +288,7 @@ else:
 # summary
 plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
 plt.xlabel('RMSE')
+plt.savefig('HisogramEs8.Seed'+str(seed)+'.png')
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -317,15 +318,17 @@ if True:
         df_best = pd.DataFrame(best_values, columns=col_names)
         TH = 11000
         df_best = df_best[df_best['RMSE']<TH]
-        plt.figure()
+        # plt.figure()
         for i in range(6):
-                plt.subplot(2, 3, 1+i)
+                plt.figure()
+                # plt.subplot(2, 3, 1+i)
                 if i==0:
                         plt.hist(df_best[col_names[i]]/1000)
                 else:
                         df_best[col_names[i]].value_counts().plot(kind='bar')
-        plt.show()
-
+                plt.savefig('Es8barplots'+str(i)+'.png')
+                plt.show()
+        # plt.show()
 # %% Choose Hyperparameters
 
 HIDDEN_NEURONS = min_hyper_parameters[0] # ??
