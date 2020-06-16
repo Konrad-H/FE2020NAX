@@ -1,7 +1,7 @@
 # %%
 import tensorflow.keras.backend as k
-# from numpy import pi
 from tensorflow import gather
+# from numpy import pi
 
 # %% MLE loss function
 # THe loss function is clipped because the logarithm gives issues when near to 0
