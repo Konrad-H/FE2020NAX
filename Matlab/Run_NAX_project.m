@@ -102,17 +102,15 @@ LIST_ACT_FUN = ["softmax"; "logsig"];
 LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
 % LIST_BATCH_SIZE = [50,5000];
 LIST_REG_PARAM = [0.001, 0.0001, 0];
-LOSS_FUN = "mse";
+LOSS_FUN = "mll";
 [hidden_neurons, act_fun, lrn_rate, reg_param, min_RMSE, all_RMSE] = ...
     find_hyperparam(dataset_NAX, LOSS_FUN,...
     LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM, M, m, start_date, end_date, val_date);
 
-hidden_neurons
-act_fun
-lrn_rate
-reg_param
+disp("hidden_neurons: "+string(hidden_neurons)  + " - act_fun: "+string(act_fun)...
+    + " - lrn_rate: "+string(lrn_rate)  + " - reg_param: "+string(reg_param) )
 
-min_RMSE
+disp("RMSE: "+string(min_RMSE))
 
 %% Parameters calibration and Confidence interval on the test set. Train set: 2009 - 2011. Test set: 2012 
 start_date = 2009;

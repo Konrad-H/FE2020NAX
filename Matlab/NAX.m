@@ -1,4 +1,4 @@
-function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lrn_rate, reg_param, first_year, last_year, test_year, flag)
+function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lrn_rate, reg_param, first_year, last_year, test_year, flag, inputs)
 
 % This function builds and calibrates the NAX network, with loss function
 % Mean Squared Error (MSE), and computes standard deviation of the fitted
@@ -17,7 +17,9 @@ function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lr
 % targets_pred:     predicted target on the test set
 % sigma:            standard deviation of the model
 %
-
+if nargin<11
+    inputs = 10;
+end
 % position of train and test set
 last_year = last_year + 1;
 test_year = test_year + 1;
@@ -30,8 +32,6 @@ regressors = table2array(dataset(:, 1:10));
 targets = dataset.residuals;
 
 regressors = (regressors-mean(regressors)) ./ std(regressors);
-
-inputs = 10;
 
 if inputs==20
     regressors_input = mat2cell([regressors(1:end-1,:)'; regressors(2:end,:)'],20,ones(1,testy_pos - 1)); %regressors [x(t), x(t-1)]
