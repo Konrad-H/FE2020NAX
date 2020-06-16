@@ -7,21 +7,42 @@ import numpy as np
 import os
 import sys
 from tensorflow.random import set_seed
+from tensorflow.keras import initializers
+from tensorflow.keras.initializers import Constant
 import time
 import matplotlib.pyplot as plt
 
-from standard_and_error_functions import destd
+# Datamining and GLM, ARX
+from data_mining_f import data_mining, data_standardize
+from GLM_and_ARX_models import regressor, GLM, ARX
+from standard_and_error_functions import destd, rmse, mape
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from evaluation_functions import ConfidenceInterval, pinball, backtest
+# NAX functions
+from hyper_param_f import find_hyperparam
+from MLE_loss import loss_strike
+from NAX_f import one_NAX_iteration, plot_train_history
+
+
+# %%
+# What to plot
+live_run = 2
+while live_run not in [0,1]:
+        live_run = int(input('Type 1 for a Live Run. Type 0 for a not live run: '))
+
+plot_demand = True
+plot_GLM = True
+plot_autocorr = True
 # %% 
 # Dataset extraction and datamining
-from data_mining_f import data_mining, data_standardize
-
-# tic = time.time()
-# dataset = data_mining("../gefcom.csv")
-# toc = time.time()
-# dataset.to_csv('dataset.csv')
-
-dataset = pd.read_csv('dataset.csv')
-# print(str(toc-tic) + ' sec Elapsed\n')
+if live_run:
+        tic = time.time()
+        dataset = data_mining("../gefcom.csv")
+        toc = time.time()
+        dataset.to_csv('dataset.csv')
+        print(str(toc-tic) + ' sec Elapsed\n')
+else:
+        dataset = pd.read_csv('dataset.csv')
 
 # Summary of energy demand and weather variables
 print(dataset.head())
@@ -32,8 +53,7 @@ print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
 # PLOT
 # Graph representing demand over 2009 and 2010
 # Sundays are highlighted by blue marker
-plot = True
-if plot:
+if plot_demand:
         start_date = 2008 
         end_date   = 2010
         start_pos = (start_date -2008)*365
@@ -61,21 +81,16 @@ if plot:
 # %% 
 # Numeric variables are standardized, mapping them in [0,1] 
 dataset = data_standardize(dataset)
-
+M,m = max(dataset.log_demand),min(dataset.log_demand)
 # Maximum and minimum values taken by log_demand are saved, as they are useful to go 
 # back from standardized values to demand values, using custom function destd
 
-M = max(dataset.log_demand)
-m = min(dataset.log_demand)
 
 # %% 
-# GLM Model
-from GLM_and_ARX_models import regressor, GLM
-
-# define regressors
-regressors = regressor(dataset)
-
+# GENERALIZED LINEAR REGRESSION
 # GLM on 2008-2010 time window
+regressors = regressor(dataset) # define regressors
+
 start_date = 2008
 end_date   = 2010
 val_date   = 2011
@@ -89,7 +104,7 @@ residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 # %%
 # GLM plot on validation set
 
-if plot:
+if plot_GLM:
         x_axis = range(end_pos, val_pos)
         demand_pred = destd(y_GLM_val, M, m)
         
@@ -111,7 +126,7 @@ if plot:
 # %%
 # Plot of GLM residuals on validation set
 
-if plot:
+if plot_GLM:
         residuals = dataset.std_demand[end_pos:val_pos] - y_GLM_val # model residuals
         residuals = pd.Series(residuals)
         
@@ -130,8 +145,8 @@ if plot:
 
 # %%
 # # Plot autocorrelation and partial autocorrelation of the residuals
-if plot:
-        from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+if plot_autocorr:
+        
 
         residuals_plt = dataset.std_demand[start_pos:end_pos] - y_GLM_train
 
@@ -142,11 +157,11 @@ if plot:
 
         # Partial Autocorrelation
         plot_pacf(residuals_plt, lags = range(0,51), alpha = None, title = None)
-        # plt.xlabel('Days')
+        plt.xlabel('Days')
         plt.show()
 
-# %% NAX Model
-# Needed data stored in a DataFrame
+# %% 
+# NaxModel DataFrame
 
 x_axis = range(len(regressors))
 names = [str(i) for i in range(9)]
@@ -162,9 +177,7 @@ df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 
 # %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
-from hyper_param_f import find_hyperparam
-from MLE_loss import loss_strike
-from tensorflow.keras import initializers
+
 MAX_EPOCHS = 500
 STOPPATIENCE = 50
 
@@ -180,7 +193,9 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-hyper_grid =int(input('What grid style?  - 1 standard; 2 simplified; 3 extended; 4 extendend 2.0')) 
+hyper_grid = 0
+while not hyper_grid in [1,2,3]:
+        hyper_grid =int(input('How big should the hyperparameter grid be?  - 1 standard; 2 simplified; 3 extended: ')) 
 
 if hyper_grid==1: #Standard Grid
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
@@ -206,17 +221,18 @@ elif hyper_grid==3: #Big Grid
         LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
         LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
 
-elif hyper_grid==4: #Even bigger grider
-        BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
-        BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
-        MULTI_LAYER_HIDDEN = [[3,3],[3,3,3], [3,4],[5,4,3]]
-        LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN   # number of neurons (hidden layer)
-        LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']   # activation function
-        LIST_LEARN_RATE = [0.0001, 0.001, 0.003, 0.01, 0.03, 0.1]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0, 0.0001, 0.0003, 0.01, 0.001]    # regularization parameter
-        LIST_BATCH_SIZE = [25, 50, 100, 500, 5000]     # batch size, 5000 for no batch
+# elif hyper_grid==4: #Even bigger grider
+#         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
+#         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
+#         MULTI_LAYER_HIDDEN = [[3,3],[3,3,3], [3,4],[5,4,3]]
+#         LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN   # number of neurons (hidden layer)
+#         LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']   # activation function
+#         LIST_LEARN_RATE = [0.0001, 0.001, 0.003, 0.01, 0.03, 0.1]     # initial learning rate (for Keras ADAM)
+#         LIST_REG_PARAM = [0, 0.0001, 0.0003, 0.01, 0.001]    # regularization parameter
+#         LIST_BATCH_SIZE = [25, 50, 100, 500, 5000]     # batch size, 5000 for no batch
 
-piece_run = False # CODE TO RUN THE NN HyperParam parallel
+
+piece_run = False # Simple TO RUN THE NN HyperParam parallel Machines
 if piece_run:
         K = 4
         N = len(LIST_HIDDEN_NEURONS)
@@ -226,12 +242,12 @@ if piece_run:
 
 # %%
 # Hyperparam run
-seed = 0 #301
-seed = int(input('What seed?'))
+seed = 301 #301
+print('Seeds: 0 are standard results. 301 are extended results.')
+seed = int(input('What seed?  '))
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = False
 save = True
 if live_run:
         # Initializers for every layers
@@ -291,7 +307,7 @@ if live_run:
                                 array = np.array([all_RMSE,weights ])
                                 np.save(name+'.npy', array)
 
-else:
+else: # LOAD DATA FROM A PREVIOUS RUN
         if hyper_grid==1 or hyper_grid==2:
                 data = np.load(name+'.npy', allow_pickle=True)
                 all_RMSE = data[0]
@@ -308,17 +324,14 @@ else:
                 for i in range(len(all_data)):
                         all_RMSE+=[all_data[i][0][0]]
                         all_weights+=[all_data[i][1]]
+                
+                # # code to only load 3 neurons from
+                # all_RMSE=[all_data[0][0][0]]
+                # all_weights=[all_data[0][1]]
                 all_RMSE = np.array(all_RMSE)
                 hid_weights = all_weights[2][0]
                 out_weights = all_weights[2][1]
 
-
-
-# %% 
-# summary
-plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
-plt.xlabel('RMSE')
-plt.savefig('Plots/HisogramEs8.Seed'+str(seed)+'.png')
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -326,11 +339,18 @@ min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_REG_PARAM[argmin[3]],
                         LIST_BATCH_SIZE[argmin[4]]]
 min_RMSE = np.min(all_RMSE,axis=None)
+# code to only load 3 neurons from
+# %% 
+# Histogram of RMSE 
+plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
+plt.xlabel('RMSE')
+plt.savefig('Plots/HisogramEs8.Seed'+str(seed)+'.png')
 print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
+# Barpltos and histogram of the best iterations
 if True:
-        k = 191
+        k = len(all_RMSE.flatten())-1
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
@@ -373,117 +393,18 @@ out_kernel_hyp  = out_weights[0]
 out_bias_hyp  = out_weights[1]
 
 
-# HYPER PARAMETERS READY
-# %% ex. 5
-#
-start_date = 2009
-end_date   = start_date+2
-test_date  = start_date+3
-start_pos = (start_date -2008)*365
-end_pos   = (end_date+1 -2008)*365
-test_pos  = (test_date+1 -2008)*365
-y_GLM_test, y_GLM_train, sigma_GLM = GLM(dataset, regressors, start_date, end_date, test_date) #predicted values
-y_GLM = np.concatenate([y_GLM_train, y_GLM_test])
-residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 
-calendar_var_NAX = calendar_var[start_pos:test_pos]
-temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
-                        'log_demand': dataset.log_demand,
-                              'residuals': residuals,
-                              'drybulb': dataset.drybulb,
-                              'dewpnt': dataset.dewpnt})                             
-temp_data_NAX = temp_data[start_pos:test_pos]
-dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
-
-
-# %%
-from NAX_f import one_NAX_iteration, plot_train_history
-from tensorflow.keras.initializers import Constant
-# Loss function used after hyperparam found
-
-set_seed(501)
-set_seed(10)
-
-MLE_loss, y2var = loss_strike(strike)
-
-MAX_EPOCHS = 600 
-STOPPATIENCE = 50
-VERBOSE = 1
-VERBOSE_EARLY = 1
-
-y_pred,history,model = one_NAX_iteration(dataset_NAX,
-                        BATCH_SIZE = BATCH_SIZE,
-                        EPOCHS = MAX_EPOCHS,
-                        REG_PARAM = REG_PARAM,
-                        ACT_FUN = ACT_FUN,
-                        LEARN_RATE = LEARN_RATE,
-                        HIDDEN_NEURONS=HIDDEN_NEURONS ,
-                        STOPPATIENCE = STOPPATIENCE,
-                        VERBOSE= VERBOSE,
-                        VERBOSE_EARLY = VERBOSE_EARLY,
-                        LOSS_FUNCTION = MLE_loss,
-                        OUT_KERNEL = Constant(out_kernel_hyp ),
-                        OUT_BIAS = Constant(out_bias_hyp ),
-                        HID_KERNEL = Constant(hid_kernel_hyp ),
-                        HID_BIAS = Constant(hid_bias_hyp ),
-                        HID_REC = Constant(hid_rec_hyp)
-                    )
-plot_train_history(history,"Loss of model")
-
-mu_NAX = y_pred[:,0]
-sigma_NAX = np.sqrt(y2var(y_pred))
-sigma_NAX = sigma_NAX[:,0]
-print('MAX sigma: ', max(sigma_NAX))
-print('MIN sigma: ', min(sigma_NAX))
-
-# %% Confidence interval
-from evaluation_functions import ConfidenceInterval
-from standard_and_error_functions import rmse, mape
-
-y_NAX_test = y_GLM_test[1:] + mu_NAX
-y_test = dataset.demand[end_pos+1:test_pos]
-print('RMSE_NAX')
-print(rmse(y_test,destd(y_NAX_test, M, m)))
-    
-# Confidence Interval at confidence level 95% 
-
-y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
-
-print( sum((y_test>y_NAX_l)&(y_test<y_NAX_u))/len(y_NAX_l))
-
-
-# Plot 95% Confidence Interval
-x_axis = range(end_pos+1, test_pos)
-lower_bound = pd.Series(y_NAX_l, index=x_axis)
-upper_bound = pd.Series(y_NAX_u, index=x_axis)
-estimated_values = pd.Series(destd(y_NAX_test, M, m), index=x_axis)
-real_values = destd(dataset.std_demand[end_pos+1:test_pos], M, m)
-real_values = pd.Series(real_values, index=x_axis)
- 
-plt.figure()
-plt.plot(x_axis, real_values/1000, '-', color='b', linewidth=1.2, label='Realized')
-plt.plot(x_axis, lower_bound/1000, color='r', linewidth=0.4)
-plt.plot(x_axis, upper_bound/1000, color='r', linewidth=0.4)
-plt.plot(x_axis, estimated_values/1000, color='r', linewidth=0.8, label='Forecast')
-plt.fill_between(x_axis, lower_bound/1000, upper_bound/1000, facecolor='coral', interpolate=True, label='CI')
-plt.xticks(np.array([dataset[dataset.date=='2012-01-01'].index, dataset[dataset.date=='2012-04-01'].index, 
-            dataset[dataset.date=='2012-07-01'].index, dataset[dataset.date=='2012-10-01'].index,
-            dataset[dataset.date=='2013-01-01'].index]),
-            ['2012-01', '2012-04', '2012-07', '2012-10', '2013-01'])
-plt.ylabel('GWh')
-plt.legend()
-plt.show()
-
+# %% ex. 5-6
 # %%
 # Comparison of GLM, NAX and ARX models, through pinball and backtest techniques, and errors MAPE and RMSE
 # We calibrate four times the model over a 3 years time window, and test it on the fourth year
 # Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
-from GLM_and_ARX_models import ARX
 
-from evaluation_functions import pinball, backtest
 set_seed(501)
 
+# Plot variables
+train_history = False
 
 hid_kernel = hid_kernel_hyp
 hid_bias = hid_bias_hyp
@@ -491,7 +412,7 @@ hid_rec = hid_rec_hyp
 out_kernel = out_kernel_hyp
 out_bias = out_bias_hyp
 
-table_col = ['Measure','Anno', 'GLM', 'ARX', 'NAX' ]
+table_col = ['Measure','Year', 'GLM', 'ARX', 'NAX' ]
 results = []
 for i in range(5):
 
@@ -535,7 +456,7 @@ for i in range(5):
                         STOPPATIENCE = STOPPATIENCE,
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
-                        LOSS_FUNCTION = MLE_loss,
+                        LOSS_FUNCTION = my_loss,
                         OUT_KERNEL = Constant(out_kernel ),
                         OUT_BIAS = Constant(out_bias ),
                         HID_KERNEL = Constant(hid_kernel ),
@@ -551,8 +472,8 @@ for i in range(5):
     out_weights = model.layers[1].get_weights()
     out_kernel = out_weights[0]
     out_bias = out_weights[1]
-
-    plot_train_history(history,"Loss of model")
+    if train_history:
+        plot_train_history(history,"Loss of model")
     
     mu_NAX = y_pred[:,0]
     sigma_NAX = np.sqrt(y2var(y_pred))
@@ -568,15 +489,23 @@ for i in range(5):
     estimated_values = pd.Series(destd(y_NAX_test, M, m), index=x_axis)
     real_values = destd(dataset.std_demand[end_pos+1:test_pos], M, m)
     real_values = pd.Series(real_values, index=x_axis)
-
+    
     plt.figure()
-    plt.plot(x_axis, real_values, '-', color='b', linewidth=1.2)
-    plt.plot(x_axis, lower_bound, color='r', linewidth=0.4)
-    plt.plot(x_axis, upper_bound, color='r', linewidth=0.4)
-    plt.plot(x_axis, estimated_values, color='r', linewidth=0.8)
-    plt.fill_between(x_axis, lower_bound, upper_bound, facecolor='coral', interpolate=True)
+    year=str(test_date)
+    plt.plot(x_axis, real_values/1000, '-', color='b', linewidth=1.2, label='Realized')
+    plt.plot(x_axis, lower_bound/1000, color='r', linewidth=0.4)
+    plt.plot(x_axis, upper_bound/1000, color='r', linewidth=0.4)
+    plt.plot(x_axis, estimated_values/1000, color='r', linewidth=0.8, label='Forecast')
+    plt.fill_between(x_axis, lower_bound/1000, upper_bound/1000, facecolor='coral', interpolate=True, label='CI')
+    plt.xticks(np.array([ dataset[dataset.date==year+'-01-01'].index, 
+        dataset[dataset.date==year+'-04-01'].index, 
+        dataset[dataset.date==year+'-07-01'].index, 
+        dataset[dataset.date==year+'-10-01'].index,
+        dataset[dataset.date==year+'-12-31'].index]),
+        [year+'-01', year+'-04', year+'-07', year+'-10', str(test_date+1)+'-01'])
+    plt.ylabel('GWh')
+    plt.legend()
     plt.show()
-
 
     # ARX Model is calibrated
     y_ARX_test, sigma_ARX = ARX(dataset_NAX, start_date, end_date, test_date)
@@ -606,7 +535,6 @@ for i in range(5):
 
     
     # Backtest
-    print('backtest')
     confidence_levels = np.arange(0.9,1,0.01)
     backtested_levels_GLM, LR_Unc_GLM, LR_Cov_GLM = backtest(y, y_GLM_test, confidence_levels, sigma_GLM, M, m)
     backtested_levels_NAX, LR_Unc_NAX, LR_Cov_NAX = backtest(y[1:], y_NAX_test, confidence_levels, sigma_NAX, M, m)
