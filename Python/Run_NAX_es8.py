@@ -109,6 +109,26 @@ if plot:
         plt.show()
 
 # %%
+# Plot of GLM residuals on validation set
+
+if plot:
+        residuals = dataset.std_demand[end_pos:val_pos] - y_GLM_val # model residuals
+        residuals = pd.Series(residuals)
+        
+        x_axis = range(end_pos, val_pos)
+        
+        dataset_plt = dataset[end_pos:val_pos+1]
+        
+        plt.figure()
+        plt.plot(residuals.index, residuals.values, '.')
+        plt.xticks(np.array([dataset_plt[dataset_plt.date=='2011-01-01'].index, dataset_plt[dataset_plt.date=='2011-03-01'].index, 
+                dataset_plt[dataset_plt.date=='2011-05-01'].index, dataset_plt[dataset_plt.date=='2011-07-01'].index,
+                dataset_plt[dataset_plt.date=='2011-09-01'].index, dataset_plt[dataset_plt.date=='2011-11-01'].index,
+                dataset_plt[dataset_plt.date=='2012-01-01'].index]),
+                ['2011-01', '2011-03', '2011-05', '2011-07', '2011-09', '2011-11', '2012-01'])
+        plt.show()
+
+# %%
 # # Plot autocorrelation and partial autocorrelation of the residuals
 if plot:
         from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
@@ -121,8 +141,8 @@ if plot:
         plt.show()
 
         # Partial Autocorrelation
-        plot_pacf(residuals_plt, lags = range(0,51), alpha = None)
-        plt.xlabel('Days')
+        plot_pacf(residuals_plt, lags = range(0,51), alpha = None, title = None)
+        # plt.xlabel('Days')
         plt.show()
 
 # %% NAX Model
@@ -439,13 +459,19 @@ upper_bound = pd.Series(y_NAX_u, index=x_axis)
 estimated_values = pd.Series(destd(y_NAX_test, M, m), index=x_axis)
 real_values = destd(dataset.std_demand[end_pos+1:test_pos], M, m)
 real_values = pd.Series(real_values, index=x_axis)
-
+ 
 plt.figure()
-plt.plot(x_axis, real_values, '-', color='b', linewidth=1.2)
-plt.plot(x_axis, lower_bound, color='r', linewidth=0.4)
-plt.plot(x_axis, upper_bound, color='r', linewidth=0.4)
-plt.plot(x_axis, estimated_values, color='r', linewidth=0.8)
-plt.fill_between(x_axis, lower_bound, upper_bound, facecolor='coral', interpolate=True)
+plt.plot(x_axis, real_values/1000, '-', color='b', linewidth=1.2, label='Realized')
+plt.plot(x_axis, lower_bound/1000, color='r', linewidth=0.4)
+plt.plot(x_axis, upper_bound/1000, color='r', linewidth=0.4)
+plt.plot(x_axis, estimated_values/1000, color='r', linewidth=0.8, label='Forecast')
+plt.fill_between(x_axis, lower_bound/1000, upper_bound/1000, facecolor='coral', interpolate=True, label='CI')
+plt.xticks(np.array([dataset[dataset.date=='2012-01-01'].index, dataset[dataset.date=='2012-04-01'].index, 
+            dataset[dataset.date=='2012-07-01'].index, dataset[dataset.date=='2012-10-01'].index,
+            dataset[dataset.date=='2013-01-01'].index]),
+            ['2012-01', '2012-04', '2012-07', '2012-10', '2013-01'])
+plt.ylabel('GWh')
+plt.legend()
 plt.show()
 
 # %%
