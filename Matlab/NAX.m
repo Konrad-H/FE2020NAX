@@ -65,8 +65,8 @@ net.performFcn = loss_f;
 net.trainParam.lr = lrn_rate;
 if loss_f == "mll"
     net.trainFcn = 'trainrp';%loss function: MSE
-    targets_train=[targets_train;targets_train]
-    targets_test=[targets_test;targets_test]
+    targets_train=[targets_train;targets_train];
+    targets_test=[targets_test;targets_test];
 end
 net.performParam.regularization = reg_param;
 
