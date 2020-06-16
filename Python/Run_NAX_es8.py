@@ -193,10 +193,10 @@ if piece_run:
         LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[((i-1)*N//K):(i*N//K)]
 
 
-
+# %%
 # Hyperparam run
 seed = 0 #301
-#seed = int(input('What seed?'))
+seed = int(input('What seed?'))
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
@@ -641,7 +641,7 @@ for i in range(5):
     results.append(LRU_year)
     results.append(LRC_year)
 df_results = pd.DataFrame(results, columns=table_col)
-
+# df_results.to_csv("Esercizio 8 [3] risultati.csv")
 
 
 
