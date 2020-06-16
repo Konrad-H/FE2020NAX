@@ -242,7 +242,7 @@ if piece_run:
 
 # %%
 # Hyperparam run
-seed = 301 #301
+
 print('Seeds: 0 are standard results. 301 are extended results.')
 seed = int(input('What seed?  '))
 set_seed(seed)
@@ -324,13 +324,19 @@ else: # LOAD DATA FROM A PREVIOUS RUN
                 for i in range(len(all_data)):
                         all_RMSE+=[all_data[i][0][0]]
                         all_weights+=[all_data[i][1]]
-                
+                best_neuron_pos = 2
                 # # code to only load 3 neurons from
                 # all_RMSE=[all_data[0][0][0]]
                 # all_weights=[all_data[0][1]]
+                # best_neuron_pos = 0
+
                 all_RMSE = np.array(all_RMSE)
-                hid_weights = all_weights[2][0]
-                out_weights = all_weights[2][1]
+                hid_weights = all_weights[best_neuron_pos][0]
+                out_weights = all_weights[best_neuron_pos][1]
+
+
+
+# %% Choose Hyperparameters and starting weights
 
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
@@ -339,6 +345,20 @@ min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_REG_PARAM[argmin[3]],
                         LIST_BATCH_SIZE[argmin[4]]]
 min_RMSE = np.min(all_RMSE,axis=None)
+
+HIDDEN_NEURONS = min_hyper_parameters[0] 
+ACT_FUN = min_hyper_parameters[1] 
+LEARN_RATE = min_hyper_parameters[2] 
+REG_PARAM = min_hyper_parameters[3] 
+BATCH_SIZE = min_hyper_parameters[4] 
+
+hid_kernel_hyp = hid_weights[0]
+hid_rec_hyp = hid_weights[1]
+hid_bias_hyp  = hid_weights[2]
+out_kernel_hyp  = out_weights[0]
+out_bias_hyp  = out_weights[1]
+
+
 # code to only load 3 neurons from
 # %% 
 # Histogram of RMSE 
@@ -378,20 +398,6 @@ if True:
                 plt.savefig('Plots/Es8barplots'+str(i)+'_K.png')
                 plt.show()
         # plt.show()
-# %% Choose Hyperparameters
-
-HIDDEN_NEURONS = min_hyper_parameters[0] # ??
-ACT_FUN = min_hyper_parameters[1] # ??
-LEARN_RATE = min_hyper_parameters[2] # ??
-REG_PARAM = min_hyper_parameters[3] # ??
-BATCH_SIZE = min_hyper_parameters[4] # ??
-
-hid_kernel_hyp = hid_weights[0]
-hid_rec_hyp = hid_weights[1]
-hid_bias_hyp  = hid_weights[2]
-out_kernel_hyp  = out_weights[0]
-out_bias_hyp  = out_weights[1]
-
 
 
 # %% ex. 5-6
