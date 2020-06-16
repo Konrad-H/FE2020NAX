@@ -12,24 +12,25 @@ from tensorflow.keras.initializers import Constant
 import time
 import matplotlib.pyplot as plt
 
-# Datamining and GLM, ARX
-from data_mining_f import data_mining, data_standardize
-from GLM_and_ARX_models import regressor, GLM, ARX
-from standard_and_error_functions import destd, rmse, mape
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from evaluation_functions import ConfidenceInterval, pinball, backtest
+# Import custom packages
+from data_mining_f import data_mining, data_standardize                 # datamining
+from GLM_and_ARX_models import regressor, GLM, ARX                      # GLM and ARX
+from standard_and_error_functions import destd, rmse, mape              # errors indicator
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf           # Autocorrelation and partial autocorrelation
+from evaluation_functions import ConfidenceInterval, pinball, backtest  # evaluation functions
 # NAX functions
-from hyper_param_f import find_hyperparam
-from MLE_loss import loss_strike
-from NAX_f import one_NAX_iteration, plot_train_history
+from hyper_param_f import find_hyperparam                               # hyperparameters' research
+from MLE_loss import loss_strike                                        # custom loss function
+from NAX_f import one_NAX_iteration, plot_train_history                 # Network calibration
 
 
 # %%
-# What to plot
+# The code entails time-consuming parts. These can be skipped, loading results from external files
 live_run = 2
 while live_run not in [0,1]:
         live_run = int(input('Type 1 for a Live Run. Type 0 for a not live run: '))
 
+# What to plot
 plot_demand = True
 plot_GLM = True
 plot_autocorr = True
@@ -168,23 +169,23 @@ names = [str(i) for i in range(9)]
 calendar_var = pd.DataFrame(regressors, index = x_axis, columns = names)
 calendar_var_NAX = calendar_var[start_pos:val_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
-                          'log_demand': dataset.log_demand,
                           'residuals': residuals,
                           'drybulb': dataset.drybulb,
                           'dewpnt': dataset.dewpnt})
 temp_data_NAX = temp_data[start_pos:val_pos]
-df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
+dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 
-# %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
+# %% 
+# Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
 
-MAX_EPOCHS = 500
-STOPPATIENCE = 50
+MAX_EPOCHS = 500        # maximum number of epochs
+STOPPATIENCE = 50       # Stoppatience for EarlyStopping - deltmin is fixed at 0 (default value)
 
-strike = 0.0001
+strike = 0.0001         # bound below for varinace
 my_loss,y2var = loss_strike(strike)
 
-
+# Where to split the dataset into train and test sets
 START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
@@ -198,28 +199,28 @@ while not hyper_grid in [1,2,3]:
         hyper_grid =int(input('How big should the hyperparameter grid be?  - 1 standard; 2 simplified; 3 extended: ')) 
 
 if hyper_grid==1: #Standard Grid
-        LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
-        LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
+        LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]       # number of neurons (hidden layer)
+        LIST_ACT_FUN = ['softmax', 'sigmoid']           # activation function
         LIST_LEARN_RATE = [  0.001, 0.003,0.01,0.1]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
-        LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
+        LIST_REG_PARAM = [0.001, 0.0001, 0]             # regularization parameter
+        LIST_BATCH_SIZE = [50, 5000]                    # batch size, 5000 for no batch
 
 elif  hyper_grid==2: #Simplified Grid for a quick Run
-        LIST_HIDDEN_NEURONS = [[3]]  
-        LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
-        LIST_LEARN_RATE = [0.001]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0.001]     # regularization parameter
-        LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
+        LIST_HIDDEN_NEURONS = [[3]]                     # number of neurons (hidden layer)
+        LIST_ACT_FUN = ['softmax', 'sigmoid']           # activation function
+        LIST_LEARN_RATE = [0.001]                       # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0.001]                        # regularization parameter
+        LIST_BATCH_SIZE = [50, 5000]                    # batch size, 5000 for no batch
 
 elif hyper_grid==3: #Big Grid
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
         MULTI_LAYER_HIDDEN = [[3,3],[3,3,3],[3,10],[10,3]]
-        LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN   # number of neurons (hidden layer)
-        LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']   # activation function
-        LIST_LEARN_RATE = [0.0001, 0.001, 0.01, 0.1]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
-        LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
+        LIST_HIDDEN_NEURONS = BASE_HIDDEN_NEURONS+MULTI_LAYER_HIDDEN    # number of neurons (hidden layer)
+        LIST_ACT_FUN = ['softmax','sigmoid',  'tanh', 'softplus']       # activation function
+        LIST_LEARN_RATE = [0.0001, 0.001, 0.01, 0.1]                    # initial learning rate (for Keras ADAM)
+        LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]                     # regularization parameter
+        LIST_BATCH_SIZE = [25, 50, 500, 5000]                           # batch size, 5000 for no batch
 
 # elif hyper_grid==4: #Even bigger grider
 #         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
@@ -243,20 +244,20 @@ if piece_run:
 # %%
 # Hyperparam run
 
-print('Seeds: 0 are standard results. 301 are extended results.')
-seed = int(input('What seed?  '))
+seed = 0        # Seeds: 0 are standard results. 301 are extended results.
+# seed = 301
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
 save = True
 if live_run:
-        # Initializers for every layers
+        # Initializers for every layer
         hid_ker_init = 'zeros'
         out_ker_init= 'zeros'
         hid_bias_init= 'zeros'
         out_bias_init= initializers.Constant([0,0.1])
         if hyper_grid==1 or hyper_grid==2:
-                all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                all_RMSE, model = find_hyperparam(dataset_NAX, M = M, m = m,    # hyperparameters' research
                                                 LOSS_FUNCTION = my_loss,
                                                 Y2VAR = y2var,
                                                 MAX_EPOCHS = MAX_EPOCHS,
@@ -272,14 +273,14 @@ if live_run:
                                                 OUT_BIAS = out_bias_init,
                                                 HID_KERNEL = hid_ker_init,
                                                 HID_BIAS = hid_ker_init)
-                hid_weights = model.layers[0].get_weights()
+                hid_weights = model.layers[0].get_weights()     # weights of best ombination are saved
                 out_weights = model.layers[1].get_weights()
-                if save:
+                if save:                                        # all_RMSE matrix and weights are saved in a .npy file
                         array = np.array([all_RMSE,hid_weights,out_weights ])
                         np.save(name+'.npy', array)
-        elif hyper_grid==3 or hyper_grid==4:
+        elif hyper_grid==3:
                 for layer_n in LIST_HIDDEN_NEURONS:
-                        all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                        all_RMSE, model = find_hyperparam(dataset_NAX, M = M, m = m,    # hyperparameters' research
                                                         LOSS_FUNCTION = my_loss,
                                                         Y2VAR = y2var,
                                                         MAX_EPOCHS = MAX_EPOCHS,
@@ -296,12 +297,12 @@ if live_run:
                                                         HID_KERNEL = hid_ker_init,
                                                         HID_BIAS = hid_ker_init)
                         weights = []
-                        hid_weights = model.layers[0].get_weights()
+                        hid_weights = model.layers[0].get_weights()     # weights of best ombination are saved
                         out_weights = model.layers[-1].get_weights()                
                         for i in range(len(layer_n)+1):
                                 weights.append(model.layers[i].get_weights())
 
-                        if save:
+                        if save:                                        # all_RMSE matrix and weights are saved in a .npy file
                                 
                                 name = 'Results/RMSE_grid'+str(hyper_grid)+'neur'+str(layer_n)+'seed'+str(seed)
                                 array = np.array([all_RMSE,weights ])
@@ -338,6 +339,7 @@ else: # LOAD DATA FROM A PREVIOUS RUN
 
 # %% Choose Hyperparameters and starting weights
 
+# Best combination hyperparameters are saved
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -352,11 +354,12 @@ LEARN_RATE = min_hyper_parameters[2]
 REG_PARAM = min_hyper_parameters[3] 
 BATCH_SIZE = min_hyper_parameters[4] 
 
-hid_kernel_hyp = hid_weights[0]
-hid_rec_hyp = hid_weights[1]
-hid_bias_hyp  = hid_weights[2]
-out_kernel_hyp  = out_weights[0]
-out_bias_hyp  = out_weights[1]
+# Weights of the calibrated network on optimal hyperparameters are saved
+hid_kernel = hid_weights[0]
+hid_rec = hid_weights[1]
+hid_bias  = hid_weights[2]
+out_kernel  = out_weights[0]
+out_bias  = out_weights[1]
 
 
 # code to only load 3 neurons from
@@ -406,17 +409,10 @@ if True:
 # We calibrate four times the model over a 3 years time window, and test it on the fourth year
 # Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
-
 set_seed(501)
 
 # Plot variables
 train_history = False
-
-hid_kernel = hid_kernel_hyp
-hid_bias = hid_bias_hyp
-hid_rec = hid_rec_hyp
-out_kernel = out_kernel_hyp
-out_bias = out_bias_hyp
 
 table_col = ['Measure','Year', 'GLM', 'ARX', 'NAX' ]
 results = []
@@ -463,13 +459,14 @@ for i in range(5):
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
                         LOSS_FUNCTION = my_loss,
-                        OUT_KERNEL = Constant(out_kernel ),
+                        OUT_KERNEL = Constant(out_kernel ),     # weights are initialized from last iteration (or from hyperparameters' grid)
                         OUT_BIAS = Constant(out_bias ),
                         HID_KERNEL = Constant(hid_kernel ),
                         HID_BIAS = Constant(hid_bias ),
                         HID_REC = Constant(hid_rec)
                         )
 
+    # Weights of calibrated network are saved for following iteration
     hid_weights = model.layers[0].get_weights()
     hid_kernel = hid_weights[0]
     hid_bias = hid_weights[-1]
@@ -478,13 +475,12 @@ for i in range(5):
     out_weights = model.layers[1].get_weights()
     out_kernel = out_weights[0]
     out_bias = out_weights[1]
-    if train_history:
-        plot_train_history(history,"Loss of model")
     
-    mu_NAX = y_pred[:,0]
-    sigma_NAX = np.sqrt(y2var(y_pred))
+    # sigma and mu are defined
+    sigma_NAX = np.sqrt(y2var(y_pred))          # absolute value of sigma is computed
     sigma_NAX = sigma_NAX[:,0]
-    y_NAX_test = y_GLM_test[1:] + mu_NAX
+    mu_NAX = y_pred[:,0]                        # mu is obtained from y_pred
+    y_NAX_test = y_GLM_test[1:] + mu_NAX        # estimated standard demand
 
     # 95% Confidence Interval Plot
     y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
@@ -613,7 +609,5 @@ for i in range(5):
     results.append(LRC_year)
 df_results = pd.DataFrame(results, columns=table_col)
 # df_results.to_csv("Esercizio 8 [3] risultati.csv")
-
-
 
 # %%
