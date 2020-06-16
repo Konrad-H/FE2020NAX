@@ -1,4 +1,4 @@
-function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lrn_rate, reg_param, first_year, last_year, test_year, flag, inputs)
+function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lrn_rate, reg_param,batch_size, first_year, last_year, test_year, flag, inputs)
 
 % This function builds and calibrates the NAX network, with loss function
 % Mean Squared Error (MSE), and computes standard deviation of the fitted
@@ -17,9 +17,10 @@ function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lr
 % targets_pred:     predicted target on the test set
 % sigma:            standard deviation of the model
 %
-if nargin<11
+if nargin<12
     inputs = 10;
 end
+
 % position of train and test set
 last_year = last_year + 1;
 test_year = test_year + 1;
@@ -63,6 +64,8 @@ net.InputConnect = [1; 0];          %connection of input to hidden layer
 net.layers{1}.transferFcn = act_fun;
 net.performFcn = loss_f;
 net.trainParam.lr = lrn_rate;
+options = trainingOptions( 'adam',  'MiniBatchSize',batch_size)
+
 if loss_f == "mll"
     net.trainFcn = 'trainrp';%loss function: MSE
     targets_train=[targets_train;targets_train];
@@ -78,7 +81,7 @@ else
     delta=0;
 end    
 targets_train = mat2cell(targets_train, size(targets_train,1), ones(1,lasty_pos-delta));
-net = train(net,regressors_train,targets_train);
+net = train(net,regressors_train,targets_train); %options
 
 % Standard Deviation of the calibrated network
 train_pred = (net(cell2mat(regressors_train)));
