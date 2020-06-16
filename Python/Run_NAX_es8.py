@@ -149,23 +149,23 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-#hyper_grid =int(input('What grid style?  - 1 standard; 2 simplifie; 3 extended; 4 extendend 2.0')) 
-hyper_grid = 1
-if hyper_grid==1:
+hyper_grid =int(input('What grid style?  - 1 standard; 2 simplified; 3 extended; 4 extendend 2.0')) 
+
+if hyper_grid==1: #Standard Grid
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
         LIST_LEARN_RATE = [  0.001, 0.003,0.01,0.1]     # initial learning rate (for Keras ADAM)
         LIST_REG_PARAM = [0.001, 0.0001, 0]     # regularization parameter
         LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
-elif  hyper_grid==2:
+elif  hyper_grid==2: #Simplified Grid for a quick Run
         LIST_HIDDEN_NEURONS = [[3]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
         LIST_LEARN_RATE = [0.001]     # initial learning rate (for Keras ADAM)
         LIST_REG_PARAM = [0.001]     # regularization parameter
         LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
 
-elif hyper_grid==3:
+elif hyper_grid==3: #Big Grid
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
         MULTI_LAYER_HIDDEN = [[3,3],[3,3,3],[3,10],[10,3]]
@@ -175,7 +175,7 @@ elif hyper_grid==3:
         LIST_REG_PARAM = [0, 0.0001  , 0.01, 0.001]    # regularization parameter
         LIST_BATCH_SIZE = [25, 50, 500, 5000]     # batch size, 5000 for no batch
 
-elif hyper_grid==4:
+elif hyper_grid==4: #Even bigger grider
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
         MULTI_LAYER_HIDDEN = [[3,3],[3,3,3], [3,4],[5,4,3]]
@@ -185,11 +185,10 @@ elif hyper_grid==4:
         LIST_REG_PARAM = [0, 0.0001, 0.0003, 0.01, 0.001]    # regularization parameter
         LIST_BATCH_SIZE = [25, 50, 100, 500, 5000]     # batch size, 5000 for no batch
 
-piece_run = False
-K = 4
-N = len(LIST_HIDDEN_NEURONS)
-
+piece_run = False # CODE TO RUN THE NN HyperParam parallel
 if piece_run:
+        K = 4
+        N = len(LIST_HIDDEN_NEURONS)
         i= int(input('This run is very big, choose a partition between 1 and '+str(K)+':'))
         LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[((i-1)*N//K):(i*N//K)]
 
@@ -204,15 +203,12 @@ name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 live_run = False
 save = True
 if live_run:
-        hid_ker_init = 'zeros' #'glorot_uniform' 
+        # Initializers for every layers
+        hid_ker_init = 'zeros'
         out_ker_init= 'zeros'
-        # hid_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
         hid_bias_init= 'zeros'
         out_bias_init= initializers.Constant([0,0.1])
-        #out_bias_init = 'zeros' #'zeros'
-        # out_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
         if hyper_grid==1 or hyper_grid==2:
-                
                 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                                 LOSS_FUNCTION = my_loss,
                                                 Y2VAR = y2var,
@@ -303,7 +299,7 @@ print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
 if True:
-        k = 10
+        k = 191
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
@@ -338,7 +334,6 @@ ACT_FUN = min_hyper_parameters[1] # ??
 LEARN_RATE = min_hyper_parameters[2] # ??
 REG_PARAM = min_hyper_parameters[3] # ??
 BATCH_SIZE = min_hyper_parameters[4] # ??
-
 
 hid_kernel_hyp = hid_weights[0]
 hid_rec_hyp = hid_weights[1]
@@ -645,7 +640,7 @@ for i in range(5):
     results.append(APL_year)
     results.append(LRU_year)
     results.append(LRC_year)
-ES8_esults = pd.DataFrame(results, columns=table_col)
+df_results = pd.DataFrame(results, columns=table_col)
 
 
 
