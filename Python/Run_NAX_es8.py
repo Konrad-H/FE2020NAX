@@ -149,8 +149,8 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-hyper_grid =int(input('What grid style?  - 1 standard; 2 simplifie; 3 extended; 4 extendend 2.0')) 
-
+#hyper_grid =int(input('What grid style?  - 1 standard; 2 simplifie; 3 extended; 4 extendend 2.0')) 
+hyper_grid = 1
 if hyper_grid==1:
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
@@ -196,13 +196,13 @@ if piece_run:
 
 
 # Hyperparam run
-seed = 452 #301
-seed = int(input('What seed?'))
+seed = 0 #301
+#seed = int(input('What seed?'))
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
 live_run = False
-save = False
+save = True
 if live_run:
         hid_ker_init = 'zeros' #'glorot_uniform' 
         out_ker_init= 'zeros'
@@ -303,7 +303,7 @@ print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
 if True:
-        k = 1000
+        k = 10
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
@@ -376,6 +376,7 @@ from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
 
 set_seed(501)
+set_seed(10)
 
 MLE_loss, y2var = loss_strike(strike)
 
@@ -450,6 +451,7 @@ from GLM_and_ARX_models import ARX
 
 from evaluation_functions import pinball, backtest
 set_seed(501)
+
 
 hid_kernel = hid_kernel_hyp
 hid_bias = hid_bias_hyp
