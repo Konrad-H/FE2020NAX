@@ -91,7 +91,7 @@ def find_hyperparam(df_NAX, M, m,
                                      past_history = past_history,
                                      future_target = future_target)
 
-    START = TRAIN_SPLIT + past_history + future_target - 1
+    START = TRAIN_SPLIT + past_history + future_target
     # early stopping criterium
     EARLYSTOP = EarlyStopping(monitor='val_loss', mode='min', verbose=VERBOSE_EARLY, patience=STOPPATIENCE)
 
@@ -99,6 +99,7 @@ def find_hyperparam(df_NAX, M, m,
 
     N_SCENARIOS = L1*L2*L3*L4*L5
 
+    min_RMSE = 1e16
     RMSE = np.zeros((L1,L2,L3,L4,L5))
     grid_history = np.zeros((L1,L2,L3,L4,L5))
     c = 0
@@ -148,7 +149,10 @@ def find_hyperparam(df_NAX, M, m,
                             # print(round(c/N_SCENARIOS,4)*100,'%)
 
                         grid_history[n1][n2][n3][n4][n5] = history.history['val_loss'][-1]                   
-
+                        # update the model to output if current RMSE is lower than min_RMSE
+                        if RMSE[n1][n2][n3][n4][n5] <= min_RMSE:
+                            out_model = model                                            
+                            min_RMSE = RMSE[n1][n2][n3][n4][n5]
     # select the optimal hyper-parameters (corresponding to the minimum RMSE)
     argmin = np.unravel_index(np.argmin(RMSE,axis=None),RMSE.shape)
     hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
@@ -160,4 +164,4 @@ def find_hyperparam(df_NAX, M, m,
     # select the minimum RMSE
     min_RMSE = np.min(RMSE,axis=None)
 
-    return hyper_parameters, min_RMSE, RMSE, grid_history
+    return RMSE, out_model

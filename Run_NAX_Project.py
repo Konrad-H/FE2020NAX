@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("gefcom.csv")
+dataset = data_mining("c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -159,23 +159,32 @@ VERBOSE_EARLY = 1
 
 seed = 14
 set_seed(seed)
-# min_hyper_parameters, min_RMSE, all_RMSE, grid_history = find_hyperparam(df_NAX, M = M, m = m,
-#                                                            LOSS_FUNCTION = my_loss,
-#                                                            MAX_EPOCHS = MAX_EPOCHS,
-#                                                            STOPPATIENCE = STOPPATIENCE,
-#                                                            LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-#                                                            LIST_ACT_FUN = LIST_ACT_FUN,
-#                                                            LIST_LEARN_RATE = LIST_LEARN_RATE,
-#                                                            LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-#                                                            LIST_REG_PARAM = LIST_REG_PARAM,
-#                                                            VERBOSE = VERBOSE,
-#                                                            VERBOSE_EARLY = VERBOSE_EARLY)
+all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+                                    LOSS_FUNCTION = my_loss,
+                                    MAX_EPOCHS = MAX_EPOCHS,
+                                    STOPPATIENCE = STOPPATIENCE,
+                                    LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
+                                    LIST_ACT_FUN = LIST_ACT_FUN,
+                                    LIST_LEARN_RATE = LIST_LEARN_RATE,
+                                    LIST_BATCH_SIZE = LIST_BATCH_SIZE,
+                                    LIST_REG_PARAM = LIST_REG_PARAM,
+                                    VERBOSE = VERBOSE,
+                                    VERBOSE_EARLY = VERBOSE_EARLY)
+
+
+hid_weights = model.layers[0].get_weights()
+hid_kernel = hid_weights[0]
+hid_bias = hid_weights[1]
+
+out_weights = model.layers[1].get_weights()
+out_kernel = out_weights[0]
+out_bias = out_weights[1]
 # print(min_hyper_parameters)
 # print(min_RMSE)
 
 # %% SAVE (or load) results 
 
-name = 'Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
+name = 'c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
 # array = np.array([all_RMSE, grid_history])
 # np.save(name, array)
 data = np.load(name)
@@ -253,13 +262,6 @@ mu_NAX = y_pred[:,0]
 sigma_NAX = np.sqrt(y2var(y_pred))
 sigma_NAX = sigma_NAX[:,0]
 
-hid_weights = model.layers[0].get_weights()
-hid_kernel = hid_weights[0]
-hid_bias = hid_weights[1]
-
-out_weights = model.layers[1].get_weights()
-out_kernel = out_weights[0]
-out_bias = out_weights[1]
 
 # %% Confidence interval
 from evaluation_functions import ConfidenceInterval
@@ -421,9 +423,9 @@ for i in range(5):
 
     # Pinball Loss Graph
     plt.figure()
-    plt.plot(pinplot_GLM.index/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
-    plt.plot(pinplot_NAX.index/100, pinplot_NAX.values/1000, color='black', label='NAX')
-    plt.plot(pinplot_ARX.index/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
+    plt.plot((pinplot_GLM.index+1)/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
+    plt.plot((pinplot_NAX.index+1)/100, pinplot_NAX.values/1000, color='black', label='NAX')
+    plt.plot((pinplot_ARX.index+1)/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
     plt.legend()
     plt.xlabel('Quantile')
     plt.ylabel('Pinball Loss [GWh]')
