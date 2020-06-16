@@ -149,7 +149,7 @@ VERBOSE = 1
 VERBOSE_EARLY = 1
 
 # Possible values of hyper-parameters
-hyper_grid =int(input('What grid style?  - 1 standard; 2 simplifie; 3 extended; 4 extendend 2.0')) 
+hyper_grid =int(input('What grid style?  - 1 standard; 2 simplified; 3 extended; 4 extendend 2.0')) 
 
 if hyper_grid==1: #Standard Grid
         LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
@@ -195,12 +195,12 @@ if piece_run:
 
 
 # Hyperparam run
-seed = 14 #301
-seed = int(input('What seed?'))
+seed = 0 #301
+#seed = int(input('What seed?'))
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = True
+live_run = False
 save = True
 if live_run:
         # Initializers for every layers
@@ -299,7 +299,7 @@ print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
 if True:
-        k = 100
+        k = 191
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
@@ -317,8 +317,8 @@ if True:
         df_best = pd.DataFrame(best_values, columns=col_names)
         TH = 10000
         df_best = df_best[df_best['RMSE']<TH]
-        plt.figure()
         for i in range(6):
+                plt.figure()
                 # plt.subplot(2, 3, 1+i)
                 if i==0:
                         plt.hist(df_best[col_names[i]]/1000)
@@ -371,6 +371,7 @@ from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
 
 set_seed(501)
+set_seed(10)
 
 MLE_loss, y2var = loss_strike(strike)
 
@@ -445,6 +446,7 @@ from GLM_and_ARX_models import ARX
 
 from evaluation_functions import pinball, backtest
 set_seed(501)
+
 
 hid_kernel = hid_kernel_hyp
 hid_bias = hid_bias_hyp
