@@ -177,7 +177,7 @@ seed = 14
 set_seed(seed)
 name = 'c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/Python/Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = True        # True: run hyperparameters research, False: load results, from already run hyperparameters research
+live_run = False        # True: run hyperparameters research, False: load results, from already run hyperparameters research
 save = True             # True: save current hyperparameters research in a csv file
 if live_run:
         # weights initialization (these are default initializations)
@@ -305,7 +305,7 @@ MAX_EPOCHS = 600
 STOPPATIENCE = 50
 VERBOSE = 1
 VERBOSE_EARLY = 1
-
+set_seed(501)
 # NAX calibration on training set. Returns predicted mu and sigma on test set.
 y_pred,history,_ = one_NAX_iteration(dataset_NAX,
                         BATCH_SIZE = BATCH_SIZE,
@@ -417,8 +417,8 @@ for i in range(5):
                         OUT_KERNEL = Constant(out_kernel ),     # Weights from last iteration are used to initialize the calibration
                         OUT_BIAS = Constant(out_bias ),
                         HID_KERNEL = Constant(hid_kernel ),
-                        HID_BIAS = Constant(hid_bias ),
-                        HID_REC = Constant(hid_rec)
+                        #HID_BIAS = Constant(hid_bias ),
+                        #HID_REC = Constant(hid_rec)
                         )
 
     # Plot of loss function during calibration
