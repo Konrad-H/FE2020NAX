@@ -65,12 +65,13 @@ net.layers{1}.transferFcn = act_fun;
 net.performFcn = loss_f;
 net.trainParam.lr = lrn_rate;
 options = trainingOptions( 'adam',  'MiniBatchSize',batch_size)
-
+net.trainFcn = 'adam'
 if loss_f == "mll"
     net.trainFcn = 'trainrp';%loss function: MSE
     targets_train=[targets_train;targets_train];
     targets_test=[targets_test;targets_test];
 end
+net.trainParam.lr = lrn_rate;
 net.performParam.regularization = reg_param;
 
 % Training of the neural network

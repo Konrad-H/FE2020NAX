@@ -51,7 +51,7 @@ for n1 = [1:L1]
                     end
                     y_NAX = y_GLM' + mu_NAX; 
                     RMSE = rmse(y, destd(y_NAX',M,m));
-                    all_RMSE(n1, n2, n3,n4,n5) =  RMSE;
+                    all_RMSE
                 end
             end
         end
