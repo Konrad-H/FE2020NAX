@@ -281,6 +281,8 @@ else:
                         all_RMSE+=[all_data[i][0][0]]
                         all_weights+=[all_data[i][1]]
                 all_RMSE = np.array(all_RMSE)
+                # hid_weights = all_weights[2][0]
+                # out_weights = all_weights[2][1]
 
 
 
@@ -288,6 +290,7 @@ else:
 # summary
 plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
 plt.xlabel('RMSE')
+plt.savefig('Plots/HisogramEs8.Seed'+str(seed)+'.png')
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -299,7 +302,7 @@ print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
 if True:
-        k = 60
+        k = 1000
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()
         for i in range(k):
@@ -315,17 +318,18 @@ if True:
         best_values = sorted(best_values,key=lambda x: (x[0]))
         col_names = ['RMSE','Hid Neurons','Act Fun', 'Learn Rate', 'Reg Param', 'Batch Size']
         df_best = pd.DataFrame(best_values, columns=col_names)
-        TH = 11000
+        TH = 10000
         df_best = df_best[df_best['RMSE']<TH]
         plt.figure()
         for i in range(6):
-                plt.subplot(2, 3, 1+i)
+                # plt.subplot(2, 3, 1+i)
                 if i==0:
                         plt.hist(df_best[col_names[i]]/1000)
                 else:
                         df_best[col_names[i]].value_counts().plot(kind='bar')
-        plt.show()
-
+                plt.savefig('Plots/Es8barplots'+str(i)+'_K.png')
+                plt.show()
+        # plt.show()
 # %% Choose Hyperparameters
 
 HIDDEN_NEURONS = min_hyper_parameters[0] # ??
@@ -370,7 +374,7 @@ from NAX_f import one_NAX_iteration, plot_train_history
 from tensorflow.keras.initializers import Constant
 # Loss function used after hyperparam found
 
-# set_seed(seed)
+set_seed(501)
 
 MLE_loss, y2var = loss_strike(strike)
 
@@ -378,8 +382,6 @@ MAX_EPOCHS = 600
 STOPPATIENCE = 50
 VERBOSE = 1
 VERBOSE_EARLY = 1
-
-kernel_init  = 'glorot_uniform'
 
 y_pred,history,model = one_NAX_iteration(dataset_NAX,
                         BATCH_SIZE = BATCH_SIZE,
@@ -454,7 +456,8 @@ hid_rec = hid_rec_hyp
 out_kernel = out_kernel_hyp
 out_bias = out_bias_hyp
 
-
+table_col = ['Measure','Anno', 'GLM', 'ARX', 'NAX' ]
+results = []
 for i in range(5):
 
     # train and test sets are defined
@@ -471,12 +474,6 @@ for i in range(5):
     y_GLM = np.concatenate([y_GLM_train, y_GLM_test])
     
     residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
-
-    # GLM errors
-    print('RMSE_GLM')
-    print(rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m)))
-    print('MAPE_GLM')
-    print(mape(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m)))
 
     # Dataset for NAX model is prepared
     calendar_var_NAX = calendar_var[start_pos:test_pos]
@@ -545,22 +542,10 @@ for i in range(5):
     plt.fill_between(x_axis, lower_bound, upper_bound, facecolor='coral', interpolate=True)
     plt.show()
 
-    # NAX Errors
-    print('RMSE_NAX')
-    print(rmse(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
-    print('MAPE_NAX')
-    print(mape(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m)))
-
 
     # ARX Model is calibrated
     y_ARX_test, sigma_ARX = ARX(dataset_NAX, start_date, end_date, test_date)
     
-    # ARX Errors
-    print('RMSE_ARX')
-    print(rmse(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m)))
-    print('MAPE_ARX')
-    print(mape(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m)))
-
 
     # Pinball Loss computed for the three models
     y = np.array(dataset.demand[end_pos:test_pos])
@@ -593,12 +578,7 @@ for i in range(5):
     backtested_levels_ARX, LR_Unc_ARX, LR_Cov_ARX = backtest(y, y_ARX_test, confidence_levels, sigma_ARX, M, m)
 
     # Likelihood Ratios of Conditional and Unconditional Covarage Test 
-    print('LR_GLM')
-    print(LR_Unc_GLM, LR_Cov_GLM)
-    print('LR_NAX')
-    print(LR_Unc_NAX, LR_Cov_NAX)
-    print('LR_ARX')
-    print(LR_Unc_ARX, LR_Cov_ARX)
+
 
     backplot_GLM = pd.Series(backtested_levels_GLM)
     backplot_NAX = pd.Series(backtested_levels_NAX)
@@ -615,6 +595,39 @@ for i in range(5):
     plt.xlabel('Nominal Level')
     plt.ylabel('Backtested Level')
     plt.show()
+
+    # GLM errors
+    print('RMSE_GLM')
+    RMSE_GLM=rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m))
+    print(RMSE_GLM)
+    print('MAPE_GLM')
+    MAPE_GLM=mape(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m))
+    print(MAPE_GLM)
+    # NAX Errors
+    print('RMSE_NAX')
+    RMSE_NAX=rmse(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m))
+    print(RMSE_NAX)
+    print('MAPE_NAX')
+    MAPE_NAX=mape(dataset.demand[end_pos+1:test_pos],destd(y_NAX_test, M, m))
+    print(MAPE_NAX)
+    # ARX Errors
+    print('RMSE_ARX')
+    RMSE_ARX=rmse(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m))
+    print(RMSE_ARX)
+    print('MAPE_ARX')
+    MAPE_ARX=mape(dataset.demand[end_pos:test_pos],destd(y_ARX_test, M, m))
+    print(MAPE_ARX)
+
+    RMSE_year = ['RMSE',test_date,RMSE_GLM, RMSE_ARX, RMSE_NAX] 
+    MAPE_year = ['MAPE',test_date, MAPE_GLM,MAPE_ARX, MAPE_NAX]
+    print('LR_GLM')
+    print(LR_Unc_GLM, LR_Cov_GLM)
+    print('LR_NAX')
+    print(LR_Unc_NAX, LR_Cov_NAX)
+    print('LR_ARX')
+    print(LR_Unc_ARX, LR_Cov_ARX)
+    results.append(RMSE_year)
+    results.append(MAPE_year)
 
 
 
