@@ -32,26 +32,29 @@ print(dataset[['demand', 'drybulb', 'dewpnt']].describe())
 # PLOT
 # Graph representing demand over 2009 and 2010
 # Sundays are highlighted by blue marker
-plot =False
+plot = True
 if plot:
-        start_date = 2009 
+        start_date = 2008 
         end_date   = 2010
         start_pos = (start_date -2008)*365
         end_pos   = (end_date+1 -2008)*365
+        
         dataset_plt = dataset[start_pos:end_pos+1]
-
+        
+        # plot
         plt.figure()
-        plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, color='red', linewidth=0.5, label='Consumption')
+        plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, color='red', linewidth=0.7, label='Consumption')
         plt.plot(dataset_plt.demand[dataset_plt.day_of_week=='Sun'].index, dataset_plt.demand[dataset_plt.day_of_week=='Sun'].values/1000, 
                 linestyle='', color='blue', marker='.', markersize=5, label='Sundays')
-        plt.legend()
-        plt.xticks(np.array([dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_plt[dataset_plt.date=='2009-04-01'].index, 
+        plt.legend(loc='upper left')
+        plt.xticks(np.array([dataset_plt[dataset_plt.date=='2008-01-01'].index, dataset_plt[dataset_plt.date=='2008-04-01'].index, 
+                dataset_plt[dataset_plt.date=='2008-07-01'].index, dataset_plt[dataset_plt.date=='2008-10-01'].index,
+                dataset_plt[dataset_plt.date=='2009-01-01'].index, dataset_plt[dataset_plt.date=='2009-04-01'].index, 
                 dataset_plt[dataset_plt.date=='2009-07-01'].index, dataset_plt[dataset_plt.date=='2009-10-01'].index,
                 dataset_plt[dataset_plt.date=='2010-01-01'].index, dataset_plt[dataset_plt.date=='2010-04-01'].index,
                 dataset_plt[dataset_plt.date=='2010-07-01'].index, dataset_plt[dataset_plt.date=='2010-10-01'].index,
                 dataset_plt[dataset_plt.date=='2011-01-01'].index]),
-                ['2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'],
-                fontsize='small')
+                ['2008-01', '2008-04', '2008-07', '2008-10', '2009-01', '2009-04', '2009-07', '2009-10', '2010-01', '2010-04', '2010-07', '2010-10', '2011-01'])
         plt.ylabel('GWh')
         plt.show()
 
@@ -84,17 +87,25 @@ y_GLM = np.concatenate([y_GLM_train,y_GLM_val])
 residuals = dataset.std_demand[start_pos:val_pos] - y_GLM # model residuals
 
 # %%
-# GLM plot on train test - uncomment to plot it
+# GLM plot on validation set
+
 if plot:
-        x_axis = range(start_pos, end_pos)
-        demand_pred = destd(y_GLM_train,M,m)
-
-        demand_plt = pd.Series(dataset.demand[start_pos:end_pos],index=x_axis)
-        demand_pred_plt = pd.Series(demand_pred,index=x_axis)
-
+        x_axis = range(end_pos, val_pos)
+        demand_pred = destd(y_GLM_val, M, m)
+        
+        dataset_plt = dataset[end_pos:val_pos+1]
+        demand_pred_plt = pd.Series(demand_pred, index=x_axis)
+        
         plt.figure()
-        demand_plt.plot()
-        demand_pred_plt.plot()
+        plt.plot(dataset_plt.demand.index, dataset_plt.demand/1000, '-', color='b', linewidth=1, label='Realized')
+        plt.plot(demand_pred_plt.index, demand_pred_plt.values/1000, color='r', linewidth=0.7, label='Forecast')
+        plt.legend(loc='upper right')
+        plt.ylabel('GWh')
+        plt.xticks(np.array([dataset_plt[dataset_plt.date=='2011-01-01'].index, dataset_plt[dataset_plt.date=='2011-03-01'].index, 
+                dataset_plt[dataset_plt.date=='2011-05-01'].index, dataset_plt[dataset_plt.date=='2011-07-01'].index,
+                dataset_plt[dataset_plt.date=='2011-09-01'].index, dataset_plt[dataset_plt.date=='2011-11-01'].index,
+                dataset_plt[dataset_plt.date=='2012-01-01'].index]),
+                ['2011-01', '2011-03', '2011-05', '2011-07', '2011-09', '2011-11', '2012-01'])
         plt.show()
 
 # %%
@@ -559,9 +570,9 @@ for i in range(5):
 
     # Pinball Loss Graph
     plt.figure()
-    plt.plot(pinplot_GLM.index/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
-    plt.plot(pinplot_NAX.index/100, pinplot_NAX.values/1000, color='black', label='NAX')
-    plt.plot(pinplot_ARX.index/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
+    plt.plot((pinplot_GLM.index+1)/100, pinplot_GLM.values/1000, linestyle='dashed', color='red', label='GLM')
+    plt.plot((pinplot_NAX.index+1)/100, pinplot_NAX.values/1000, color='black', label='NAX')
+    plt.plot((pinplot_ARX.index+1)/100, pinplot_ARX.values/1000, linestyle='dotted', color='blue', label='ARX')
     plt.legend()
     plt.xlabel('Quantile')
     plt.ylabel('Pinball Loss [GWh]')
