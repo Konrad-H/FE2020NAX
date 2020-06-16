@@ -35,7 +35,7 @@ def loss_strike(strike=.008):
     #   y2var: function that translates y_pred to the var
     def y2var(y_pred):
         var = k.square(gather(y_pred,[1],axis=1))
-        put_strike = None # .5**2
+        put_strike = None
         var = k.clip(var, strike, put_strike)      
         return var  
     def MLE_loss(y_true, y_pred):

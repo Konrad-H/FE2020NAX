@@ -54,9 +54,10 @@ def find_hyperparam(df_NAX, M, m,
                     
                     VERBOSE = VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
-                    OUT_KERNEL = 'zeros',
+                    OUT_KERNEL = 'glorot_uniform',
                     OUT_BIAS = 'zeros',
-                    HID_KERNEL = 'zeros',
+                    HID_KERNEL = 'glorot_uniform',
+                    HID_REC = "orthogonal",
                     HID_BIAS = 'zeros'):
     
     # This function selects the optimal hyper-parameters (corresponding to the minimum RMSE)
@@ -71,6 +72,11 @@ def find_hyperparam(df_NAX, M, m,
     # LIST_BATCH_SIZE:      batch size
     # M:        maximum of the log_demand observed over the years: 2008 - 2016
     # m:        minimum of the log_demand observed over the years: 2008 - 2016
+    # OUT_KERNEL:           output layer, kernel's weights initialization
+    # OUT_BIAS:             output layer, bias's weights initialization
+    # HID_KERNEL:           hidden layer, kernel's weights initialization
+    # HID_BIAS:             hidden layer, bias's weights initialization
+    # HID_REC:              hidden layer, recurrent's weights initialization
     #
     # OUTPUTS:
     # RMSE:             RMSE corresponding to all possible combinations of hyper-parameters
@@ -118,6 +124,7 @@ def find_hyperparam(df_NAX, M, m,
                                             OUT_KERNEL = OUT_KERNEL,
                                             OUT_BIAS = OUT_BIAS,
                                             HID_KERNEL = HID_KERNEL,
+                                            HID_REC = HID_REC,
                                             HID_BIAS = HID_BIAS)
                         # train the model
                         history = model.fit(x = x_train, y = y_train, 

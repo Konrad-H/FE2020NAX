@@ -16,12 +16,14 @@ from standard_and_error_functions import destd
 from data_mining_f import data_mining, data_standardize
 
 # tic = time.time()
-# dataset = data_mining("../gefcom.csv")
+# dataset = data_mining("../gefcom.csv")        # important data are extracted from dataset
 # toc = time.time()
-# dataset.to_csv('dataset.csv')
-
-dataset = pd.read_csv('dataset.csv')
+# dataset.to_csv('dataset.csv')                 # save dataset in a csv file for fast access
 # print(str(toc-tic) + ' sec Elapsed\n')
+
+# load already mined dataset, for fast access
+dataset = pd.read_csv('c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/Python/dataset.csv')
+
 
 # Summary of energy demand and weather variables
 print(dataset.head())
@@ -98,7 +100,7 @@ if plot:
         plt.show()
 
 # %%
-# # Plot autocorrelation and partial autocorrelation of the residuals
+# Plot autocorrelation and partial autocorrelation of the residuals
 if plot:
         from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
@@ -122,48 +124,41 @@ names = [str(i) for i in range(9)]
 calendar_var = pd.DataFrame(regressors, index = x_axis, columns = names)
 calendar_var_NAX = calendar_var[start_pos:val_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
-                          'log_demand': dataset.log_demand,
                           'residuals': residuals,
                           'drybulb': dataset.drybulb,
                           'dewpnt': dataset.dewpnt})
 temp_data_NAX = temp_data[start_pos:val_pos]
-df_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
+dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
 
-# %% Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
+# %% 
+# Selection of the optimal hyper-parameters (corresponding to the minimum RMSE)
 from hyper_param_f import find_hyperparam
 from MLE_loss import loss_strike
 from tensorflow.keras import initializers
-MAX_EPOCHS = 500
-STOPPATIENCE = 50
 
-strike = 0.0001
-my_loss,y2var = loss_strike(strike)
+# Definition of some parameters for the optimal hyper-parameters search
+MAX_EPOCHS = 500        # maximum number of epochs
+STOPPATIENCE = 50       # patience of EarlyStopping - deltamin has been chosen equal to zero, default value
 
+strike = 0.0001         # strike which bounds estimated variance below
+my_loss,y2var = loss_strike(strike) # custom loss function and bound variance below function
 
-START_SPLIT = 0
+START_SPLIT = 0         # points to split the dataset into training and test sets
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
 
-VERBOSE = 1
-VERBOSE_EARLY = 1
+VERBOSE = 1             # 1 if output of each iteration should be printed, 0 otherwise
+VERBOSE_EARLY = 1       # 1 if output of each iteration should be printed, 0 otherwise
 
 # Possible values of hyper-parameters
-run_mode = 1#1 standard 2 simplified 3 extended
-if run_mode==1:
-        LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  
+run_mode = 1    #1 standard grid, 0 extended grid
+if run_mode:
+        LIST_HIDDEN_NEURONS = [[3], [4], [5],[6]]  # number of neurons (hidden layer)
         LIST_ACT_FUN = ['softmax', 'sigmoid']   # activation function
         LIST_LEARN_RATE = [0.001, 0.003, 0.01, 0.1]     # initial learning rate (for Keras ADAM)
         LIST_REG_PARAM = [0, 0.0001, 0.001]     # regularization parameter
         LIST_BATCH_SIZE = [50, 5000]     # batch size, 5000 for no batch
-
-elif  run_mode==2:
-        LIST_HIDDEN_NEURONS = [[3]]  
-        LIST_ACT_FUN = ['softmax']   # activation function
-        LIST_LEARN_RATE = [0.003]     # initial learning rate (for Keras ADAM)
-        LIST_REG_PARAM = [0.0001]     # regularization parameter
-        LIST_BATCH_SIZE = [25, 50, 75, 100]     # batch size, 5000 for no batch
-
 else:
         BASE_HIDDEN_NEURONS = [3,4,5,6,8,10]
         BASE_HIDDEN_NEURONS = [[i] for i in BASE_HIDDEN_NEURONS]
@@ -178,20 +173,21 @@ else:
 
 # %%
 # Hyperparam run
-seed = 452
+seed = 14
 set_seed(seed)
-name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
+name = 'c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/Python/Results/RMSE.'+str(seed)+'.'+str(strike)
 
-live_run = False
-save = True
+live_run = True        # True: run hyperparameters research, False: load results, from already run hyperparameters research
+save = True             # True: save current hyperparameters research in a csv file
 if live_run:
-        hid_ker_init = 'zeros' #'glorot_uniform' 
-        out_ker_init= 'zeros'
-        # hid_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
-        hid_bias_init= 'zeros'
-        out_bias_init= initializers.Constant([0,0.1]) #'zeros'
-        # out_bias_init = initializers.RandomUniform(minval=-2/1000, maxval=2/1000)
-        all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
+        # weights initialization (these are default initializations)
+        out_ker_init="glorot_uniform"
+        out_bias_init="zeros"
+        hid_ker_init="glorot_uniform"
+        hid_rec_init="orthogonal"
+        hid_bias_init="zeros"
+        # hyperparameters research
+        all_RMSE, model = find_hyperparam(dataset_NAX, M = M, m = m,
                                         LOSS_FUNCTION = my_loss,
                                         Y2VAR = y2var,
                                         MAX_EPOCHS = MAX_EPOCHS,
@@ -206,7 +202,8 @@ if live_run:
                                         OUT_KERNEL = out_ker_init,
                                         OUT_BIAS = out_bias_init,
                                         HID_KERNEL = hid_ker_init,
-                                        HID_BIAS = hid_ker_init)
+                                        HID_REC = hid_rec_init,
+                                        HID_BIAS = hid_bias_init)
         hid_weights = model.layers[0].get_weights()
         out_weights = model.layers[1].get_weights()
         if save:
@@ -218,8 +215,9 @@ else:
         hid_weights = data[1]
         out_weights = data[2]
 
+
 # %% 
-# summary
+# Plot of RMSE distribution. All RMSE over 30'000 are set at 30'001
 plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
@@ -230,6 +228,7 @@ min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
 min_RMSE = np.min(all_RMSE,axis=None)
 
 # %%
+# Plot of best working combinations, devided by each value, taken by each parameter
 if True:
         k = 191
         idx = np.argpartition(all_RMSE.flatten(), k)
@@ -258,41 +257,41 @@ if True:
                         df_best[col_names[i]].value_counts().plot(kind='bar')
 
 
-# %% Choose Hyperparameters
+# %%
+# Optimal Hyperparameters are fixed
+HIDDEN_NEURONS = min_hyper_parameters[0]
+ACT_FUN = min_hyper_parameters[1]
+LEARN_RATE = min_hyper_parameters[2]
+REG_PARAM = min_hyper_parameters[3]
+BATCH_SIZE = min_hyper_parameters[4]
 
-HIDDEN_NEURONS = min_hyper_parameters[0] # ??
-ACT_FUN = min_hyper_parameters[1] # ??
-LEARN_RATE = min_hyper_parameters[2] # ??
-REG_PARAM = min_hyper_parameters[3] # ??
-BATCH_SIZE = min_hyper_parameters[4] # ??
+# Weights of the calibrated network of the optimal hyperarameters combination are saved
+hid_kernel = hid_weights[0]
+hid_rec = hid_weights[1]
+hid_bias  = hid_weights[2]
+out_kernel  = out_weights[0]
+out_bias  = out_weights[1]
 
+# %%
+# Confidence Interval plot on tet set 2012
 
-hid_kernel_hyp = hid_weights[0]
-hid_rec_hyp = hid_weights[1]
-hid_bias_hyp  = hid_weights[2]
-out_kernel_hyp  = out_weights[0]
-out_bias_hyp  = out_weights[1]
-
-
-# HYPER PARAMETERS READY
-# %% ex. 5
-#
-start_date = 2008
-end_date   = start_date+2
-test_date  = start_date+3
+# Training and Test sets are defined 
+start_date = 2009
+end_date   = 2011
+test_date  = 2012
 start_pos = (start_date -2008)*365
 end_pos   = (end_date+1 -2008)*365
 test_pos  = (test_date+1 -2008)*365
+# GLM
 y_GLM_test, y_GLM_train, sigma_GLM = GLM(dataset, regressors, start_date, end_date, test_date) #predicted values
 y_GLM = np.concatenate([y_GLM_train, y_GLM_test])
 residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
-
+# Dataset for NAX is prepared
 calendar_var_NAX = calendar_var[start_pos:test_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
-                        'log_demand': dataset.log_demand,
-                              'residuals': residuals,
-                              'drybulb': dataset.drybulb,
-                              'dewpnt': dataset.dewpnt})                             
+                          'residuals': residuals,
+                          'drybulb': dataset.drybulb,
+                          'dewpnt': dataset.dewpnt})                             
 temp_data_NAX = temp_data[start_pos:test_pos]
 dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 
@@ -300,70 +299,55 @@ dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
 # %%
 from NAX_f import one_NAX_iteration, plot_train_history
 from tensorflow.keras.initializers import Constant
-# Loss function used after hyperparam found
 
-# set_seed(seed)
-
-MLE_loss, y2var = loss_strike(strike)
-
+# NAX parameters are fixed
 MAX_EPOCHS = 600 
 STOPPATIENCE = 50
 VERBOSE = 1
 VERBOSE_EARLY = 1
 
-kernel_init  = 'glorot_uniform'
-
-y_pred,history,model = one_NAX_iteration(dataset_NAX,
+# NAX calibration on training set. Returns predicted mu and sigma on test set.
+y_pred,history,_ = one_NAX_iteration(dataset_NAX,
                         BATCH_SIZE = BATCH_SIZE,
                         EPOCHS = MAX_EPOCHS,
                         REG_PARAM = REG_PARAM,
                         ACT_FUN = ACT_FUN,
                         LEARN_RATE = LEARN_RATE,
-                        HIDDEN_NEURONS=HIDDEN_NEURONS ,
+                        HIDDEN_NEURONS=HIDDEN_NEURONS,
                         STOPPATIENCE = STOPPATIENCE,
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
-                        LOSS_FUNCTION = MLE_loss,
-                        # OUT_KERNEL = kernel_init,
-                        # OUT_BIAS = 'zeros',
-                        # HID_KERNEL = 'zeros',
-                        # HID_BIAS = 'zeros',
-                        # OUT_KERNEL = Constant(out_kernel_hyp ),
-                        OUT_BIAS = Constant(out_bias_hyp ),
-                        # HID_KERNEL = Constant(hid_kernel_hyp ),
-                        HID_BIAS = Constant(hid_bias_hyp ),
-                        HID_REC = Constant(hid_rec_hyp)
-                    )
+                        LOSS_FUNCTION = my_loss,
+                        OUT_KERNEL = Constant(out_kernel),
+                        OUT_BIAS = Constant(out_bias),
+                        HID_KERNEL = Constant(hid_kernel),
+                        HID_REC = Constant(hid_rec),
+                        HID_BIAS = Constant(hid_bias)
+                        )
 plot_train_history(history,"Loss of model")
 
-mu_NAX = y_pred[:,0]
-sigma_NAX = np.sqrt(y2var(y_pred))
+mu_NAX = y_pred[:,0]                    # y_pred's first column contains mu
+y_NAX_test = y_GLM_test[1:] + mu_NAX    # standard demand prediction with NAX
+sigma_NAX = np.sqrt(y2var(y_pred))      # sigma values are taken in absolute value
 sigma_NAX = sigma_NAX[:,0]
 print('MAX sigma: ', max(sigma_NAX))
 print('MIN sigma: ', min(sigma_NAX))
 
-# %% Confidence interval
+# %%
+
+# Confidence interval is plotted
 from evaluation_functions import ConfidenceInterval
 from standard_and_error_functions import rmse, mape
 
-y_NAX_test = y_GLM_test[1:] + mu_NAX
-y_test = dataset.demand[end_pos+1:test_pos]
-print('RMSE_NAX')
-print(rmse(y_test,destd(y_NAX_test, M, m)))
-    
 # Confidence Interval at confidence level 95% 
-
 y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
-
-print( sum((y_test>y_NAX_l)&(y_test<y_NAX_u))/len(y_NAX_l))
-
 
 # Plot 95% Confidence Interval
 x_axis = range(end_pos+1, test_pos)
 lower_bound = pd.Series(y_NAX_l, index=x_axis)
 upper_bound = pd.Series(y_NAX_u, index=x_axis)
 estimated_values = pd.Series(destd(y_NAX_test, M, m), index=x_axis)
-real_values = destd(dataset.std_demand[end_pos+1:test_pos], M, m)
+real_values = dataset.demand[end_pos+1:test_pos]
 real_values = pd.Series(real_values, index=x_axis)
 
 plt.figure()
@@ -380,32 +364,22 @@ plt.show()
 # Test years: 2012 - 2013 - 2014 - 2015 - 2016
 
 from GLM_and_ARX_models import ARX
-
 from evaluation_functions import pinball, backtest
-set_seed(501)
-
-hid_kernel = hid_kernel_hyp
-hid_bias = hid_bias_hyp
-hid_rec = hid_rec_hyp
-out_kernel = out_kernel_hyp
-out_bias = out_bias_hyp
-
 
 for i in range(5):
 
-    # train and test sets are defined
+    # Train and test sets are defined
     start_date = 2009+i
     end_date   = 2011+i
     test_date  = 2012+i
     start_pos = (start_date -2008)*365
     end_pos   = (end_date+1 -2008)*365
     test_pos  = (test_date+1 -2008)*365
-    
 
     # GLM calibration
     y_GLM_test, y_GLM_train, sigma_GLM = GLM(dataset, regressors, start_date, end_date, test_date) #predicted values
     y_GLM = np.concatenate([y_GLM_train, y_GLM_test])
-    
+
     residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 
     # GLM errors
@@ -413,6 +387,7 @@ for i in range(5):
     print(rmse(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m)))
     print('MAPE_GLM')
     print(mape(dataset.demand[end_pos:test_pos],destd(y_GLM_test, M, m)))
+
 
     # Dataset for NAX model is prepared
     calendar_var_NAX = calendar_var[start_pos:test_pos]
@@ -422,7 +397,6 @@ for i in range(5):
                                 'dewpnt': dataset.dewpnt})                             
     temp_data_NAX = temp_data[start_pos:test_pos]
     dataset_NAX = pd.concat([temp_data_NAX ,calendar_var_NAX],axis=1)
-
 
     # NAX model is calibrated
     MAX_EPOCHS = 500 
@@ -439,14 +413,18 @@ for i in range(5):
                         STOPPATIENCE = STOPPATIENCE,
                         VERBOSE= VERBOSE,
                         VERBOSE_EARLY = VERBOSE_EARLY,
-                        LOSS_FUNCTION = MLE_loss,
-                        OUT_KERNEL = Constant(out_kernel ),
+                        LOSS_FUNCTION = my_loss,
+                        OUT_KERNEL = Constant(out_kernel ),     # Weights from last iteration are used to initialize the calibration
                         OUT_BIAS = Constant(out_bias ),
                         HID_KERNEL = Constant(hid_kernel ),
                         HID_BIAS = Constant(hid_bias ),
                         HID_REC = Constant(hid_rec)
                         )
 
+    # Plot of loss function during calibration
+    plot_train_history(history,"Loss of model")
+
+    # Weights of the calibrated network are saved
     hid_weights = model.layers[0].get_weights()
     hid_kernel = hid_weights[0]
     hid_bias = hid_weights[-1]
@@ -456,12 +434,11 @@ for i in range(5):
     out_kernel = out_weights[0]
     out_bias = out_weights[1]
 
-    plot_train_history(history,"Loss of model")
-    
+    # mu and sigma are extracted
     mu_NAX = y_pred[:,0]
+    y_NAX_test = y_GLM_test[1:] + mu_NAX
     sigma_NAX = np.sqrt(y2var(y_pred))
     sigma_NAX = sigma_NAX[:,0]
-    y_NAX_test = y_GLM_test[1:] + mu_NAX
 
     # 95% Confidence Interval Plot
     y_NAX_l, y_NAX_u = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m)
@@ -470,7 +447,7 @@ for i in range(5):
     lower_bound = pd.Series(y_NAX_l, index=x_axis)
     upper_bound = pd.Series(y_NAX_u, index=x_axis)
     estimated_values = pd.Series(destd(y_NAX_test, M, m), index=x_axis)
-    real_values = destd(dataset.std_demand[end_pos+1:test_pos], M, m)
+    real_values = dataset.demand[end_pos+1:test_pos]
     real_values = pd.Series(real_values, index=x_axis)
 
     plt.figure()
