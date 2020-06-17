@@ -26,7 +26,7 @@ for i = 1:length(dates_to_plot)
     plot_pos(i) = find(dataset_plt.dates == dates_to_plot(i));
 end
 
-figure
+figure()
 plot([start_pos:end_pos], dataset_plt.demand/1000, 'r', ...
       start_pos-1+sundays_pos, dataset_plt.demand(sundays_pos)/1000, 'b.', 'MarkerSize', 8);
 xlim([start_pos-30, end_pos+30])
@@ -64,7 +64,7 @@ residuals = dataset.std_demand(start_pos+1:val_pos) - y_GLM;
 % GLM plot
 demand_pred = destd(y_GLM_train, M, m);
 
-figure
+figure()
 plot([start_pos+1: end_pos], dataset.demand(start_pos+1:end_pos)/1000)
 hold on
 plot([start_pos+1: end_pos], demand_pred/1000)
@@ -74,13 +74,13 @@ grid on
 % Plot autocorrelation and partial autocorrelation of the residuals
 residuals_plt = dataset.std_demand(start_pos+1:end_pos) - y_GLM_train;
 
-figure
+figure()
 autocorr(residuals_plt, 'NumLags', 50);
 xlabel('Days')
 xlim([-2, 52])
 ylim([-0.2, 1.2])
 
-figure
+figure()
 parcorr(residuals_plt, 'NumLags', 50);
 xlabel('Days')
 xlim([-2, 52])
@@ -105,7 +105,7 @@ LIST_REG_PARAM = [0.001, 0.0001, 0];
 % LOSS_FUN = "mll"; % ONLY RUN MLL IF MLL IS INSTALLED IN THE PC
 LOSS_FUN = "mse";
 
-rng(7)
+rng(100)
 [hidden_neurons, act_fun, lrn_rate, reg_param, min_RMSE, all_RMSE] = ...
     find_hyperparam(dataset_NAX, LOSS_FUN,...
     LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM, M, m, start_date, end_date, val_date);
@@ -253,6 +253,8 @@ for i = [0:4]
 	xlabel('Nominal Level \alpha')
     ylabel('Backtested Level')
     xlim([0.895 1.005])
+    
+    figure()
     
 end
 
