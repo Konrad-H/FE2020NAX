@@ -1,6 +1,6 @@
 clear all
 clc
-
+rng(14);
 %% Dataset extraction and datamining
 tic
 dataset = data_mining("../gefcom.csv");
@@ -103,13 +103,13 @@ LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
 LIST_BATCH_SIZE = [50,5000];
 LIST_REG_PARAM = [0.001, 0.0001, 0];
 
-LIST_HIDDEN_NEURONS = [2,3];
+LIST_HIDDEN_NEURONS = [3];
 LIST_ACT_FUN = ["softmax"];
 LIST_LEARN_RATE = [0.1];
 LIST_BATCH_SIZE = [50];
 LIST_REG_PARAM = [0.001, 0.0001];
 % LOSS_FUN = "mll"; % ONLY RUN MLL IF MLL IS INSTALLED IN THE PC
-LOSS_FUN = "mse";
+LOSS_FUN = "mll";
 [hidden_neurons, act_fun, lrn_rate, reg_param, batch_size,min_RMSE, all_RMSE] = ...
     find_hyperparam(dataset_NAX, LOSS_FUN,...
     LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM,LIST_BATCH_SIZE, M, m, start_date, end_date, val_date);
@@ -161,7 +161,10 @@ plot(y_NAX_u, 'r', 'LineWidth', 0.4)
 plot(estimated_values, 'r', 'LineWidth', 0.8)
 
 %% FOR 
-for i = [0:4]
+RMSE = zeros(5,3)
+MAPE = zeros(5,3)
+APL = zeros(5,3)
+for i = [0:4] %0:4
     start_date = 2009+i;
     end_date   = 2011+i;
     test_date  = 2012+i
@@ -229,7 +232,7 @@ for i = [0:4]
 	plot([1:length(pinball_values_GLM)]/100, pinball_values_GLM/1000, 'r--', ...
          [1:length(pinball_values_ARX)]/100, pinball_values_ARX/1000, 'b:', ...
          [1:length(pinball_values_NAX)]/100, pinball_values_NAX/1000, 'c--')
-    legend('GLM', 'ARX', 'Location', 'NorthEast')
+    legend('GLM', 'ARX','NAX', 'Location', 'NorthEast')
     xlabel('Quantile')
     ylabel('Pinball Loss [GWh]')
     
@@ -259,6 +262,16 @@ for i = [0:4]
 	xlabel('Nominal Level \alpha')
     ylabel('Backtested Level')
     xlim([0.895 1.005])
+    i=i+1
+    RMSE(i,1) = RMSE_GLM;
+    RMSE(i,2) = RMSE_ARX;
+    RMSE(i,3) = RMSE_NAX;
+    MAPE(i,1) = MAPE_GLM;
+    MAPE(i,2) = MAPE_ARX;
+    MAPE(i,3) = MAPE_NAX;
+    APL(i,1) = mean(pinball_values_GLM);
+    APL(i,2) = mean(pinball_values_ARX);
+    APL(i,3) = mean(pinball_values_NAX);
     
 end
 

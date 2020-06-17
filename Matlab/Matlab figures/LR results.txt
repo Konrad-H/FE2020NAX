@@ -1,0 +1,31 @@
+
+LR_Unc_GLM =
+
+    0.3041
+
+
+LR_Cov_GLM =
+
+   33.2602
+
+LR_NAX
+
+LR_Unc_NAX =
+
+    2.3678
+
+
+LR_Cov_NAX =
+
+   33.6372
+
+LR_ARX
+
+LR_Unc_ARX =
+
+    3.5126
+
+
+LR_Cov_ARX =
+
+   26.2354

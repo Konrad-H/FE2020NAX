@@ -64,8 +64,7 @@ net.InputConnect = [1; 0];          %connection of input to hidden layer
 net.layers{1}.transferFcn = act_fun;
 net.performFcn = loss_f;
 net.trainParam.lr = lrn_rate;
-options = trainingOptions( 'adam',  'MiniBatchSize',batch_size)
-net.trainFcn = 'adam'
+%options = trainingOptions( 'adam',  'MiniBatchSize',batch_size)
 if loss_f == "mll"
     net.trainFcn = 'trainrp';%loss function: MSE
     targets_train=[targets_train;targets_train];
