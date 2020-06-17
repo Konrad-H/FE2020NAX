@@ -93,4 +93,5 @@ if (flag)
     plot([1:length(targets_pred)],targets_pred(1,:) )
     hold on
     plot([1:length(targets_pred)],targets_test(1,:) )
+    title("Fitted Residuals")
 end

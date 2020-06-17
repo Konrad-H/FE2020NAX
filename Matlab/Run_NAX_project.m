@@ -3,7 +3,7 @@ clc
 
 %% Dataset extraction and datamining
 tic
-dataset = data_mining("../gefcom.csv");
+dataset = data_mining("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv");
 toc
 
 % Dataset description
@@ -104,6 +104,8 @@ LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
 LIST_REG_PARAM = [0.001, 0.0001, 0];
 % LOSS_FUN = "mll"; % ONLY RUN MLL IF MLL IS INSTALLED IN THE PC
 LOSS_FUN = "mse";
+
+rng(7)
 [hidden_neurons, act_fun, lrn_rate, reg_param, min_RMSE, all_RMSE] = ...
     find_hyperparam(dataset_NAX, LOSS_FUN,...
     LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM, M, m, start_date, end_date, val_date);
@@ -132,7 +134,6 @@ dataset_NAX.dewpnt = dataset.dewpnt(start_pos+1:test_pos);
 dataset_NAX.std_demand = dataset.std_demand(start_pos+1:test_pos);
 dataset_NAX.residuals = residuals;
 
-rng(5)
 [mu_NAX, sigma_NAX] = NAX(dataset_NAX, LOSS_FUN, hidden_neurons, act_fun, lrn_rate, reg_param, start_date, end_date, test_date, 1);
 
 y_NAX_test = mu_NAX' + y_GLM_test;
@@ -218,7 +219,7 @@ for i = [0:4]
     pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX, M, m);
 
     % Pinball Loss Graph
-    figure
+    figure()
 	plot([1:length(pinball_values_GLM)]/100, pinball_values_GLM/1000, 'r--', ...
          [1:length(pinball_values_ARX)]/100, pinball_values_ARX/1000, 'b:', ...
          [1:length(pinball_values_NAX)]/100, pinball_values_NAX/1000, 'k')
