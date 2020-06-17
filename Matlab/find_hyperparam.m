@@ -48,7 +48,7 @@ for n1 = [1:L1]
                     mu_NAX = mu_NAX(:,1);
                 end
                 y_NAX = y_GLM' + mu_NAX; 
-                RMSE = rmse(y, destd(y_NAX',M,m));
+                all_RMSE(n1,n2,n3,n4) = rmse(y, destd(y_NAX',M,m));
 
             end
         end
@@ -57,7 +57,7 @@ end
 
 % Find the minimum RMSE and relative optimal parameters
 [~, idx] = min(all_RMSE(:));            
-[n1, n2, n3,n4] = ind2sub(size(all_RMSE),idx)
+[n1, n2, n3,n4] = ind2sub(size(all_RMSE),idx);
 min_RMSE = all_RMSE(n1,n2,n3,n4);
 hidden_neurons = list_hidden_neurons(n1);
 act_fun = list_act_fun(n2,:);
