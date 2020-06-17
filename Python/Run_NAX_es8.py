@@ -1,5 +1,6 @@
-# To add a new cell, type '# %%'
-
+# POLIMI - Financial Engineering Spring 2020
+# Project NAX - Group 7B
+# 
 # %% 
 # Import useful built-in packages
 import pandas as pd 
@@ -243,9 +244,10 @@ if piece_run:
 
 # %%
 # Hyperparam run
-
-seed = 0        # Seeds: 0 are standard results. 301 are extended results.
-# seed = 301
+if hyper_grid==1 or hyper_grid==2:
+        seed = 0        # Seeds: 0 are standard results. 301 are extended results.
+else:
+        seed = 301
 set_seed(seed)
 name = 'Results/RMSE.'+str(seed)+'.'+str(strike)
 
