@@ -3,7 +3,7 @@ clc
 
 %% Dataset extraction and datamining
 tic
-dataset = data_mining("gefcom.csv");
+dataset = data_mining("../gefcom.csv");
 toc
 
 % Dataset description
@@ -87,7 +87,6 @@ xlim([-2, 52])
 ylim([-0.4, 1.2])
 
 %% NAX Model
-
 % Needed data stored in a Table
 calendar_var_NAX = array2table(regressors);
 dataset_NAX = calendar_var_NAX(start_pos+1:val_pos, :);
@@ -100,15 +99,17 @@ dataset_NAX.residuals = residuals;
 % Hyperparameters
 LIST_HIDDEN_NEURONS = [3, 4, 5, 6];
 LIST_ACT_FUN = ["softmax"; "logsig"];
-% LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
+LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
 % LIST_BATCH_SIZE = [50,5000];
 LIST_REG_PARAM = [0.001, 0.0001, 0];
- 
-[hidden_neurons, act_fun, reg_param, min_RMSE, all_RMSE] = find_hyperparam(dataset_NAX, ...
-    LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_REG_PARAM, M, m, start_date, end_date, val_date);
+LOSS_FUN = "mse";
+[hidden_neurons, act_fun, lrn_rate, reg_param, min_RMSE, all_RMSE] = ...
+    find_hyperparam(dataset_NAX, LOSS_FUN,...
+    LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM, M, m, start_date, end_date, val_date);
 
 hidden_neurons
 act_fun
+lrn_rate
 reg_param
 
 min_RMSE
@@ -133,7 +134,7 @@ dataset_NAX.std_demand = dataset.std_demand(start_pos+1:test_pos);
 dataset_NAX.residuals = residuals;
 
 rng(5)
-[mu_NAX, sigma_NAX] = NAX(dataset_NAX, hidden_neurons, act_fun, reg_param, start_date, end_date, test_date, 1);
+[mu_NAX, sigma_NAX] = NAX(dataset_NAX, LOSS_FUN, hidden_neurons, act_fun, lrn_rate, reg_param, start_date, end_date, test_date, 1);
 
 y_NAX_test = mu_NAX' + y_GLM_test;
 
@@ -153,7 +154,7 @@ plot(y_NAX_l, 'r', 'LineWidth', 0.4)
 plot(y_NAX_u, 'r', 'LineWidth', 0.4)
 plot(estimated_values, 'r', 'LineWidth', 0.8)
 
-%% FOR
+%% FOR 
 for i = [0:4]
     start_date = 2009+i;
     end_date   = 2011+i;
@@ -180,7 +181,7 @@ for i = [0:4]
     dataset_NAX.residuals = residuals;
     
     % NAX model
-    [mu_NAX, sigma_NAX] = NAX(dataset_NAX, hidden_neurons, act_fun, reg_param, start_date, end_date, test_date, 1);
+    [mu_NAX, sigma_NAX] = NAX(dataset_NAX, LOSS_FUN, hidden_neurons, act_fun, lrn_rate, reg_param, start_date, end_date, test_date, 1);
     y_NAX_test = mu_NAX' + y_GLM_test;
 
     [y_NAX_l, y_NAX_u] = ConfidenceInterval(y_NAX_test, sigma_NAX, 0.95, M, m);
