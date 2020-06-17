@@ -4,7 +4,7 @@ close all
 rng(100);
 %% Dataset extraction and datamining
 tic
-dataset = data_mining("C:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv");
+dataset = data_mining("../gefcom.csv");
 toc
 
 % Dataset description
