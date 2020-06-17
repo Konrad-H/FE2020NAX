@@ -26,7 +26,7 @@ for i = 1:length(dates_to_plot)
     plot_pos(i) = find(dataset_plt.dates == dates_to_plot(i));
 end
 
-figure
+figure()
 plot([start_pos:end_pos], dataset_plt.demand/1000, 'r', ...
       start_pos-1+sundays_pos, dataset_plt.demand(sundays_pos)/1000, 'b.', 'MarkerSize', 8);
 xlim([start_pos-30, end_pos+30])
@@ -64,7 +64,7 @@ residuals = dataset.std_demand(start_pos+1:val_pos) - y_GLM;
 % GLM plot
 demand_pred = destd(y_GLM_train, M, m);
 
-figure
+figure()
 plot([start_pos+1: end_pos], dataset.demand(start_pos+1:end_pos)/1000)
 hold on
 plot([start_pos+1: end_pos], demand_pred/1000)
@@ -74,19 +74,21 @@ grid on
 % Plot autocorrelation and partial autocorrelation of the residuals
 residuals_plt = dataset.std_demand(start_pos+1:end_pos) - y_GLM_train;
 
-figure
+figure()
 autocorr(residuals_plt, 'NumLags', 50);
 xlabel('Days')
 xlim([-2, 52])
 ylim([-0.2, 1.2])
 
-figure
+figure()
 parcorr(residuals_plt, 'NumLags', 50);
 xlabel('Days')
 xlim([-2, 52])
 ylim([-0.4, 1.2])
 
 %% NAX Model
+rng(100)
+
 % Needed data stored in a Table
 calendar_var_NAX = array2table(regressors);
 dataset_NAX = calendar_var_NAX(start_pos+1:val_pos, :);
@@ -109,7 +111,8 @@ LIST_LEARN_RATE = [0.1];
 LIST_BATCH_SIZE = [50];
 LIST_REG_PARAM = [0.001, 0.0001];
 % LOSS_FUN = "mll"; % ONLY RUN MLL IF MLL IS INSTALLED IN THE PC
-LOSS_FUN = "mll";
+LOSS_FUN = "mse";
+
 [hidden_neurons, act_fun, lrn_rate, reg_param, batch_size,min_RMSE, all_RMSE] = ...
     find_hyperparam(dataset_NAX, LOSS_FUN,...
     LIST_HIDDEN_NEURONS, LIST_ACT_FUN, LIST_LEARN_RATE,LIST_REG_PARAM,LIST_BATCH_SIZE, M, m, start_date, end_date, val_date);
@@ -121,6 +124,7 @@ disp("hidden_neurons: "+string(hidden_neurons)  + " - act_fun: "+string(act_fun)
 disp("RMSE: "+string(min_RMSE))
 
 %% Parameters calibration and Confidence interval on the test set. Train set: 2009 - 2011. Test set: 2012 
+rng(14)
 start_date = 2009;
 end_date   = 2011;
 test_date  = 2012;
@@ -139,10 +143,9 @@ dataset_NAX.dewpnt = dataset.dewpnt(start_pos+1:test_pos);
 dataset_NAX.std_demand = dataset.std_demand(start_pos+1:test_pos);
 dataset_NAX.residuals = residuals;
 
-rng(5)
 [mu_NAX, sigma_NAX] = NAX(dataset_NAX, LOSS_FUN, hidden_neurons, act_fun, lrn_rate, reg_param,batch_size, start_date, end_date, test_date, 1);
 
-y_NAX_test = mu_NAX(1,:)' + y_GLM_test;
+y_NAX_test = mu_NAX' + y_GLM_test;
 
 %% Confidence interval
 
@@ -228,11 +231,11 @@ for i = [0:4] %0:4
     pinball_values_ARX = pinball(y, y_ARX_test, sigma_ARX, M, m);
 
     % Pinball Loss Graph
-    figure
+    figure()
 	plot([1:length(pinball_values_GLM)]/100, pinball_values_GLM/1000, 'r--', ...
          [1:length(pinball_values_ARX)]/100, pinball_values_ARX/1000, 'b:', ...
-         [1:length(pinball_values_NAX)]/100, pinball_values_NAX/1000, 'c--')
-    legend('GLM', 'ARX','NAX', 'Location', 'NorthEast')
+         [1:length(pinball_values_NAX)]/100, pinball_values_NAX/1000, 'k')
+    legend('GLM', 'ARX', 'NAX', 'Location', 'NorthEast')
     xlabel('Quantile')
     ylabel('Pinball Loss [GWh]')
     
@@ -256,7 +259,7 @@ for i = [0:4] %0:4
     figure()
     plot(confidence_levels, backtested_levels_GLM, 'r--', ...
          confidence_levels, backtested_levels_ARX, 'b:', ...
-         confidence_levels, backtested_levels_NAX, 'c--', ...
+         confidence_levels, backtested_levels_NAX, 'k', ...
          confidence_levels, confidence_levels, 'c.', 'MarkerSize', 8)
     legend('GLM', 'ARX', 'NAX', 'Nominal Level', 'Location', 'NorthWest')
 	xlabel('Nominal Level \alpha')
@@ -272,6 +275,8 @@ for i = [0:4] %0:4
     APL(i,1) = mean(pinball_values_GLM);
     APL(i,2) = mean(pinball_values_ARX);
     APL(i,3) = mean(pinball_values_NAX);
+    
+    figure()
     
 end
 
