@@ -393,16 +393,20 @@ if True:
         df_best = pd.DataFrame(best_values, columns=col_names)
         TH = 10000
         df_best = df_best[df_best['RMSE']<TH]
+        plt.figure()
         for i in range(6):
-                plt.figure()
-                # plt.subplot(2, 3, 1+i)
+                
+                plt.subplot(2, 3, 1+i)
                 if i==0:
                         plt.hist(df_best[col_names[i]]/1000)
                 else:
                         df_best[col_names[i]].value_counts().plot(kind='bar')
-                plt.savefig('Plots/Es8barplots'+str(i)+'_K.png')
-                plt.show()
-        # plt.show()
+                
+                plt.title(col_names[i])
+                # plt.savefig('Plots/Es8barplots'+str(i)+'_K.png')
+                #plt.show()
+        plt.savefig('Plots/Es8barplots'+str(seed)+'.png')
+        plt.show()
 
 
 # %% ex. 5-6
