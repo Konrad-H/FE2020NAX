@@ -1,4 +1,4 @@
-function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lrn_rate, reg_param,batch_size, first_year, last_year, test_year, flag, inputs)
+function [targets_pred, sigma]= NAX(dataset, loss_f ,hidden_neurons, act_fun, lrn_rate, reg_param, first_year, last_year, test_year, flag, inputs)
 
 % This function builds and calibrates the NAX network, with loss function
 % Mean Squared Error (MSE), and computes standard deviation of the fitted
