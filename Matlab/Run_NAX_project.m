@@ -135,7 +135,7 @@ dataset_NAX.residuals = residuals;
 rng(5)
 [mu_NAX, sigma_NAX] = NAX(dataset_NAX, LOSS_FUN, hidden_neurons, act_fun, lrn_rate, reg_param, start_date, end_date, test_date, 1);
 
-y_NAX_test = mu_NAX(1,:)' + y_GLM_test;
+y_NAX_test = mu_NAX' + y_GLM_test;
 
 %% Confidence interval
 
