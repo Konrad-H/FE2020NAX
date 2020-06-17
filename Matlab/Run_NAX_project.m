@@ -1,5 +1,6 @@
 clear all
 clc
+close all
 rng(14);
 %% Dataset extraction and datamining
 tic
@@ -87,7 +88,7 @@ xlim([-2, 52])
 ylim([-0.4, 1.2])
 
 %% NAX Model
-rng(100)
+% rng(100)
 
 % Needed data stored in a Table
 calendar_var_NAX = array2table(regressors);
@@ -105,11 +106,6 @@ LIST_LEARN_RATE = [0.1, 0.01, 0.003, 0.001];
 LIST_BATCH_SIZE = [50,5000];
 LIST_REG_PARAM = [0.001, 0.0001, 0];
 
-LIST_HIDDEN_NEURONS = [3];
-LIST_ACT_FUN = ["softmax"];
-LIST_LEARN_RATE = [0.1];
-LIST_BATCH_SIZE = [50];
-LIST_REG_PARAM = [0.001, 0.0001];
 % LOSS_FUN = "mll"; % ONLY RUN MLL IF MLL IS INSTALLED IN THE PC
 LOSS_FUN = "mse";
 
@@ -124,7 +120,7 @@ disp("hidden_neurons: "+string(hidden_neurons)  + " - act_fun: "+string(act_fun)
 disp("RMSE: "+string(min_RMSE))
 
 %% Parameters calibration and Confidence interval on the test set. Train set: 2009 - 2011. Test set: 2012 
-rng(14)
+
 start_date = 2009;
 end_date   = 2011;
 test_date  = 2012;
@@ -162,7 +158,7 @@ plot(dataset.demand(end_pos+1:test_pos), 'b', 'LineWidth', 1.2) % prendere colon
 plot(y_NAX_l, 'r', 'LineWidth', 0.4)
 plot(y_NAX_u, 'r', 'LineWidth', 0.4)
 plot(estimated_values, 'r', 'LineWidth', 0.8)
-
+hold off
 %% FOR 
 RMSE = zeros(5,3)
 MAPE = zeros(5,3)
@@ -276,7 +272,6 @@ for i = [0:4] %0:4
     APL(i,2) = mean(pinball_values_ARX);
     APL(i,3) = mean(pinball_values_NAX);
     
-    figure()
     
 end
 

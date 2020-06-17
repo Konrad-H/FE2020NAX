@@ -35,6 +35,7 @@ while live_run not in [0,1]:
 plot_demand = True
 plot_GLM = True
 plot_autocorr = True
+plot_hyper = True
 # %% 
 # Dataset extraction and datamining
 if live_run:
@@ -244,8 +245,9 @@ if piece_run:
 
 # %%
 # Hyperparam run
+# Seeds: 0 are standard results. 301 are extended results.
 if hyper_grid==1 or hyper_grid==2:
-        seed = 0        # Seeds: 0 are standard results. 301 are extended results.
+        seed = 0        
 else:
         seed = 301
 set_seed(seed)
@@ -367,14 +369,15 @@ out_bias  = out_weights[1]
 # code to only load 3 neurons from
 # %% 
 # Histogram of RMSE 
-plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
-plt.xlabel('RMSE')
-plt.savefig('Plots/HisogramEs8.Seed'+str(seed)+'.png')
+if plot_hyper:
+        plt.hist(all_RMSE.flatten()*(all_RMSE.flatten()<30000) + 30001*(all_RMSE.flatten()>30000))
+        plt.xlabel('RMSE')
+        plt.savefig('Plots/HisogramEs8.Seed'+str(seed)+'.png')
 print(min_RMSE,' -- ' ,min_hyper_parameters)
 
 # %%
 # Barpltos and histogram of the best iterations
-if True:
+if plot_hyper:
         k = len(all_RMSE.flatten())-1
         idx = np.argpartition(all_RMSE.flatten(), k)
         best_values = np.zeros((k,5)).tolist()

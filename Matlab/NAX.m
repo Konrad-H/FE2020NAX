@@ -93,6 +93,7 @@ targets_pred = net(cell2mat(regressors_test));
 
 % Plot: theoretical residuals vs. predicted residuals
 if (flag)
+    figure();
     plot([1:length(targets_pred)],targets_pred(1,:) )
     hold on
     plot([1:length(targets_pred)],targets_test(1,:) )
