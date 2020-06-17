@@ -290,7 +290,7 @@ if live_run:
                         all_RMSE, model = find_hyperparam(dataset_NAX, M = M, m = m,    # hyperparameters' research
                                                         LOSS_FUNCTION = my_loss,
                                                         Y2VAR = y2var,
-                                                        MAX_EPOCHS = MAX_EPOCHS,
+                                                        EPOCHS = MAX_EPOCHS,
                                                         STOPPATIENCE = STOPPATIENCE,
                                                         LIST_HIDDEN_NEURONS = [layer_n],
                                                         LIST_ACT_FUN = LIST_ACT_FUN,
