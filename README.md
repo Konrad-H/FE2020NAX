@@ -14,8 +14,8 @@ Konrad Hartmann - konrad.hartmann@mail.polimi.it
 Fabio Maggioni - fabio1.maggioni@mail.polimi.it
 
 %% 
-To run the code inside Python and Matlab the file gefcome.csv should be
- inside the repository folder, outside Matlab, i.e Python path/FE2020NAX/gefcom.csv
+To run the code inside Python and Matlab the file gefcom.csv should be
+ inside the repository folder, outside Matlab and Python, i.e. /FE2020NAX/gefcom.csv
 
 
 %%
