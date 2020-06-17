@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from data_mining_f import data_mining, data_standardize
 
 tic = time.time()
-dataset = data_mining("../gefcom.csv")
+dataset = data_mining("c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/gefcom.csv")
 toc = time.time()
 # print(str(toc-tic) + ' sec Elapsed\n')
 
@@ -116,6 +116,7 @@ names = [str(i) for i in range(9)]
 calendar_var = pd.DataFrame(regressors, index = x_axis, columns = names)
 calendar_var_NAX = calendar_var[start_pos:val_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
+                          'log_demand': dataset.log_demand,
                           'residuals': residuals,
                           'drybulb': dataset.drybulb,
                           'dewpnt': dataset.dewpnt})
@@ -158,7 +159,6 @@ VERBOSE_EARLY = 1
 
 seed = 14
 set_seed(seed)
-name = '/Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
 all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                     LOSS_FUNCTION = my_loss,
                                     MAX_EPOCHS = MAX_EPOCHS,
@@ -171,40 +171,24 @@ all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
                                     VERBOSE = VERBOSE,
                                     VERBOSE_EARLY = VERBOSE_EARLY)
 
-live_run = True        # True: run hyperparameters research, False: load results, from already run hyperparameters research
-save = True             # True: save current hyperparameters research in a csv file
-if live_run:
-        # hyperparameters research
-        all_RMSE, model = find_hyperparam(df_NAX, M = M, m = m,
-                                    LOSS_FUNCTION = my_loss,
-                                    MAX_EPOCHS = MAX_EPOCHS,
-                                    STOPPATIENCE = STOPPATIENCE,
-                                    LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
-                                    LIST_ACT_FUN = LIST_ACT_FUN,
-                                    LIST_LEARN_RATE = LIST_LEARN_RATE,
-                                    LIST_BATCH_SIZE = LIST_BATCH_SIZE,
-                                    LIST_REG_PARAM = LIST_REG_PARAM,
-                                    VERBOSE = VERBOSE,
-                                    VERBOSE_EARLY = VERBOSE_EARLY)
-        hid_weights = model.layers[0].get_weights()
-        out_weights = model.layers[1].get_weights()
-        if save:
-                array = np.array([all_RMSE,hid_weights,out_weights ])
-                np.save(name+'.npy', array)
-else:
-        data = np.load(name+'.npy', allow_pickle=True)
-        all_RMSE = data[0]
-        hid_weights = data[1]
-        out_weights = data[2]
 
+hid_weights = model.layers[0].get_weights()
 hid_kernel = hid_weights[0]
 hid_bias = hid_weights[1]
+
+out_weights = model.layers[1].get_weights()
 out_kernel = out_weights[0]
 out_bias = out_weights[1]
 # print(min_hyper_parameters)
 # print(min_RMSE)
 
-# Take optimal hyperparameters
+# %% SAVE (or load) results 
+
+name = 'c:/Users/User/Desktop/Università/Magistrale/Semestre 2/FE/Final project/FE2020NAX/Results/RMSE.'+str(seed)+'.'+str(strike)+'.npy'
+# array = np.array([all_RMSE, grid_history])
+# np.save(name, array)
+data = np.load(name)
+all_RMSE = data[0]
 argmin = np.unravel_index(np.argmin(all_RMSE,axis=None),all_RMSE.shape)
 min_hyper_parameters = [LIST_HIDDEN_NEURONS[argmin[0]],
                         LIST_ACT_FUN[argmin[1]], 
@@ -215,11 +199,11 @@ min_RMSE = np.min(all_RMSE,axis=None)
 
 # %% Choose Hyperparameters
 
-HIDDEN_NEURONS = min_hyper_parameters[0]
-ACT_FUN = min_hyper_parameters[1]
-LEARN_RATE = min_hyper_parameters[2]
-REG_PARAM = min_hyper_parameters[3] 
-BATCH_SIZE = min_hyper_parameters[4]
+HIDDEN_NEURONS = min_hyper_parameters[0] # ??
+ACT_FUN = min_hyper_parameters[1] # ??
+LEARN_RATE = min_hyper_parameters[2] # ??
+REG_PARAM = min_hyper_parameters[3] # ??
+BATCH_SIZE = min_hyper_parameters[4] # ??
 
 
 # HYPER PARAMETERS READY
@@ -237,6 +221,7 @@ residuals = dataset.std_demand[start_pos:test_pos] - y_GLM
 
 calendar_var_NAX = calendar_var[start_pos:test_pos]
 temp_data = pd.DataFrame({'std_demand': dataset.std_demand,
+                        'log_demand': dataset.log_demand,
                               'residuals': residuals,
                               'drybulb': dataset.drybulb,
                               'dewpnt': dataset.dewpnt})                             
