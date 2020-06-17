@@ -1,7 +1,7 @@
 clear all
 clc
 close all
-rng(14);
+rng(10);
 %% Dataset extraction and datamining
 tic
 dataset = data_mining("../gefcom.csv");
@@ -230,7 +230,7 @@ for i = [0:4] %0:4
     figure()
 	plot([1:length(pinball_values_GLM)]/100, pinball_values_GLM/1000, 'r--', ...
          [1:length(pinball_values_ARX)]/100, pinball_values_ARX/1000, 'b:', ...
-         [1:length(pinball_values_NAX)]/100, pinball_values_NAX/1000, 'k')
+         [1:length(pinball_values_NAX)]/100, pinball_values_NAX/1000, 'k-')
     legend('GLM', 'ARX', 'NAX', 'Location', 'NorthEast')
     xlabel('Quantile')
     ylabel('Pinball Loss [GWh]')
@@ -255,7 +255,7 @@ for i = [0:4] %0:4
     figure()
     plot(confidence_levels, backtested_levels_GLM, 'r--', ...
          confidence_levels, backtested_levels_ARX, 'b:', ...
-         confidence_levels, backtested_levels_NAX, 'k', ...
+         confidence_levels, backtested_levels_NAX, 'k-', ...
          confidence_levels, confidence_levels, 'c.', 'MarkerSize', 8)
     legend('GLM', 'ARX', 'NAX', 'Nominal Level', 'Location', 'NorthWest')
 	xlabel('Nominal Level \alpha')
