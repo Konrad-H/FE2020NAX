@@ -20,10 +20,10 @@ from standard_and_error_functions import destd, rmse, mape              # errors
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf           # Autocorrelation and partial autocorrelation
 from evaluation_functions import ConfidenceInterval, pinball, backtest  # evaluation functions
 # NAX functions
-from hyper_param_f import find_hyperparam                               # hyperparameters' research
+# from hyper_param_f import find_hyperparam                               # hyperparameters' research
 from MLE_loss import loss_strike                                        # custom loss function
 from NAX_f import one_NAX_iteration, plot_train_history                 # Network calibration
-
+from hyper_param_f import find_hyperparam    
 
 # %%
 # The code entails time-consuming parts. These can be skipped, loading results from external files
@@ -130,15 +130,15 @@ if plot_GLM:
 # Plot of GLM residuals on validation set
 
 if plot_GLM:
-        residuals = dataset.std_demand[end_pos:val_pos] - y_GLM_val # model residuals
-        residuals = pd.Series(residuals)
+        plt_residuals = dataset.std_demand[end_pos:val_pos] - y_GLM_val # model residuals
+        plt_residuals = pd.Series(plt_residuals)
         
         x_axis = range(end_pos, val_pos)
         
         dataset_plt = dataset[end_pos:val_pos+1]
         
         plt.figure()
-        plt.plot(residuals.index, residuals.values, '.')
+        plt.plot(plt_residuals.index, plt_residuals.values, '.')
         plt.xticks(np.array([dataset_plt[dataset_plt.date=='2011-01-01'].index, dataset_plt[dataset_plt.date=='2011-03-01'].index, 
                 dataset_plt[dataset_plt.date=='2011-05-01'].index, dataset_plt[dataset_plt.date=='2011-07-01'].index,
                 dataset_plt[dataset_plt.date=='2011-09-01'].index, dataset_plt[dataset_plt.date=='2011-11-01'].index,
@@ -192,8 +192,9 @@ START_SPLIT = 0
 TRAIN_SPLIT = 1095
 VAL_SPLIT = 1095+365
 
-VERBOSE = 1
+VERBOSE = 0
 VERBOSE_EARLY = 1
+VERBOSE_HYPER = 1
 
 # Possible values of hyper-parameters
 hyper_grid = 0
@@ -264,7 +265,7 @@ if live_run:
                 all_RMSE, model = find_hyperparam(dataset_NAX, M = M, m = m,    # hyperparameters' research
                                                 LOSS_FUNCTION = my_loss,
                                                 Y2VAR = y2var,
-                                                MAX_EPOCHS = MAX_EPOCHS,
+                                                EPOCHS = MAX_EPOCHS,
                                                 STOPPATIENCE = STOPPATIENCE,
                                                 LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
                                                 LIST_ACT_FUN = LIST_ACT_FUN,
@@ -273,10 +274,12 @@ if live_run:
                                                 LIST_REG_PARAM = LIST_REG_PARAM,
                                                 VERBOSE = VERBOSE,
                                                 VERBOSE_EARLY = VERBOSE_EARLY,
+                                                VERBOSE_HYPER = VERBOSE_HYPER,
                                                 OUT_KERNEL = out_ker_init,
                                                 OUT_BIAS = out_bias_init,
                                                 HID_KERNEL = hid_ker_init,
-                                                HID_BIAS = hid_ker_init)
+                                                HID_BIAS = hid_ker_init
+                                                )
                 hid_weights = model.layers[0].get_weights()     # weights of best ombination are saved
                 out_weights = model.layers[1].get_weights()
                 if save:                                        # all_RMSE matrix and weights are saved in a .npy file
@@ -296,6 +299,7 @@ if live_run:
                                                         LIST_REG_PARAM = LIST_REG_PARAM,
                                                         VERBOSE = VERBOSE,
                                                         VERBOSE_EARLY = VERBOSE_EARLY,
+                                                        VERBOSE_HYPER = VERBOSE_HYPER,
                                                         OUT_KERNEL = out_ker_init,
                                                         OUT_BIAS = out_bias_init,
                                                         HID_KERNEL = hid_ker_init,

@@ -36,7 +36,7 @@ def find_hyperparam(df_NAX, M, m,
 
                     LOSS_FUNCTION = my_loss,
                     Y2VAR = y2var,
-                    MAX_EPOCHS = MAX_EPOCHS,
+                    EPOCHS = MAX_EPOCHS,
                     STOPPATIENCE = STOPPATIENCE,
 
                     LIST_HIDDEN_NEURONS = LIST_HIDDEN_NEURONS,
@@ -54,6 +54,7 @@ def find_hyperparam(df_NAX, M, m,
                     
                     VERBOSE = VERBOSE,
                     VERBOSE_EARLY = VERBOSE_EARLY,
+                    VERBOSE_HYPER = 1,
                     OUT_KERNEL = 'zeros',
                     OUT_BIAS = 'zeros',
                     HID_KERNEL = 'zeros',
@@ -109,11 +110,17 @@ def find_hyperparam(df_NAX, M, m,
                     for n5 in range(L5):
                         # for every possible combination of hyper-parameters
                         # build a simpleRNN model
+                        REG_PARAM = LIST_REG_PARAM[n4]
+                        ACT_FUN = LIST_ACT_FUN[n2]
+                        LEARN_RATE = LIST_LEARN_RATE[n3]
+                        HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[n1]
+                        BATCH_SIZE = LIST_BATCH_SIZE[n5]
+
                         model = NAX_model(INPUT_SHAPE = x_train.shape[-2:],
-                                            REG_PARAM = LIST_REG_PARAM[n4],
-                                            ACT_FUN = LIST_ACT_FUN[n2],
-                                            LEARN_RATE = LIST_LEARN_RATE[n3],
-                                            HIDDEN_NEURONS = LIST_HIDDEN_NEURONS[n1],
+                                            REG_PARAM = REG_PARAM,
+                                            ACT_FUN = ACT_FUN,
+                                            LEARN_RATE = LEARN_RATE,
+                                            HIDDEN_NEURONS = HIDDEN_NEURONS,
                                             LOSS_FUNCTION = LOSS_FUNCTION,
                                             OUT_KERNEL = OUT_KERNEL,
                                             OUT_BIAS = OUT_BIAS,
@@ -121,9 +128,9 @@ def find_hyperparam(df_NAX, M, m,
                                             HID_BIAS = HID_BIAS)
                         # train the model
                         history = model.fit(x = x_train, y = y_train, 
-                                            batch_size = LIST_BATCH_SIZE[n5], epochs = MAX_EPOCHS, 
-                                            verbose = 0, callbacks = [EARLYSTOP], 
-                                            validation_data = (x_val, y_val), validation_batch_size = LIST_BATCH_SIZE[n5])
+                                            batch_size = BATCH_SIZE, epochs = EPOCHS, 
+                                            verbose = VERBOSE, callbacks = [EARLYSTOP], 
+                                            validation_data = (x_val, y_val), validation_batch_size = BATCH_SIZE)
                         # predict output corresponding to input x_val
                         y_pred = model.predict(x_val)
                         
@@ -134,7 +141,7 @@ def find_hyperparam(df_NAX, M, m,
                         RMSE[n1][n2][n3][n4][n5] = rmse(demand_NAX, demand_true)
 
                         # print progress of the loop
-                        if VERBOSE==1:
+                        if VERBOSE_HYPER==1:
                             RMSE[n1][n2][n3][n4][n5] = rmse(demand_NAX,demand_true)
                             hyper_parameters = [LIST_HIDDEN_NEURONS[n1],
                                                 LIST_ACT_FUN[n2], 
